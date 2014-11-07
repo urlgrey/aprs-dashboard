@@ -4,7 +4,8 @@ machine:
     - wget https://storage.googleapis.com/golang/go1.3.3.linux-amd64.tar.gz
     - tar -xzf go1.3.3.linux-amd64.tar.gz
     - wget http://www.pakettiradio.net/downloads/libfap/1.3/deb_amd64/libfap-dev_1.3_amd64.deb
-    - sudo dpkg -i libfap-dev_1.3_amd64.deb
+    - wget http://www.pakettiradio.net/downloads/libfap/1.3/deb_amd64/libfap5_1.3_amd64.deb
+    - sudo dpkg -i libfap-dev_1.3_amd64.deb libfap5_1.3_amd64.deb
   environment:
     GOPATH: ${HOME}/aprs-dashboard/_vendor:${HOME}/aprs-dashboard
     GOROOT: ${HOME}/go
