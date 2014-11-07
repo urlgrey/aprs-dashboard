@@ -1,0 +1,12 @@
+machine:
+  pre:
+    - cd ${HOME}
+    - wget https://storage.googleapis.com/golang/go1.3.3.linux-amd64.tar.gz
+    - tar -xzf go1.3.3.linux-amd64.tar.gz
+  environment:
+    GOPATH: ${HOME}/aprs-dashboard/_vendor:${HOME}/aprs-dashboard
+    GOROOT: ${HOME}/go
+    PATH: ${GOROOT}/bin:${PATH}
+test:
+  override:
+    - make build
