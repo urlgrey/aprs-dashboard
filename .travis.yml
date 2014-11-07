@@ -1,0 +1,16 @@
+language: go
+go:
+  - 1.3
+  - tip
+env:
+  - GOARCH=amd64
+install:
+  - make build
+notifications:
+  email:
+    recipients:
+      - kidder.scott@gmail.com
+    on_success: change
+    on_failure: always
+services:
+  - redis
