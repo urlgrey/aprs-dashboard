@@ -4,6 +4,7 @@ go:
   - tip
 env:
   - GOARCH=amd64
+  - GOPATH=./_vendor
 install:
   - make build
 notifications:
