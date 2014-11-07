@@ -1,0 +1,13 @@
+{
+    "timestamp": 1415324169,
+    "callsign": "KK6DCI-2",
+    "status": "mobile",
+    "symbol": "running man",
+    "latitude": 0.0,
+    "longitude": 0.0,
+    "altitude": 0.0,
+    "speed": 50.0,
+    "temperature": 22.0,
+    "humidity": 0.75,
+    "raw_message": "foobaz"
+}
