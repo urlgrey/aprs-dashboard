@@ -2,6 +2,7 @@ package main
 
 import (
 	"github.com/garyburd/redigo/redis"
+	"encoding/json"
 	"log"
 	"time"
 )
@@ -55,4 +56,25 @@ func NewDatabase(server string, password string, database string) *Database {
 
 func (db *Database) Close() {
 	db.redisPool.Close()
+}
+
+func (db *Database) PushHead(key string, message *AprsMessage) error {
+	jsonBytes, marshalErr := json.Marshal(message)
+	if marshalErr != nil {
+		log.Println("Error converting message to JSON", marshalErr)
+		return nil
+	} else {
+		c := db.redisPool.Get()
+		defer c.Close()
+
+		_, err := c.Do("LPUSH", key, string(jsonBytes[:]))
+		return err
+	}
+}
+
+func (db *Database) Ping() error {
+	c := db.redisPool.Get()
+	defer c.Close()
+	_, err := c.Do("PING")
+	return err
 }
