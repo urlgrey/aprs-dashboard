@@ -1,8 +1,8 @@
 package main
 
 import (
-	"github.com/garyburd/redigo/redis"
 	"encoding/json"
+	"github.com/garyburd/redigo/redis"
 	"log"
 	"time"
 )

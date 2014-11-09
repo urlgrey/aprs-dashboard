@@ -5,7 +5,7 @@ import (
 )
 
 func Test_NewDatabase(t *testing.T) {
-	db := NewDatabase(":6379", "", "");
+	db := NewDatabase(":6379", "", "")
 	defer db.Close()
 	err := db.Ping()
 	if err != nil {
@@ -14,7 +14,7 @@ func Test_NewDatabase(t *testing.T) {
 }
 
 func Test_PushHead(t *testing.T) {
-	db := NewDatabase(":6379", "", "");
+	db := NewDatabase(":6379", "", "")
 	defer db.Close()
 
 	message := &AprsMessage{}
