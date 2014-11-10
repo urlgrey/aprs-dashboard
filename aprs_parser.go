@@ -5,6 +5,7 @@ package main
 // #include <stdlib.h>
 import "C"
 import "unsafe"
+import "errors"
 
 type AprsMessage struct {
 	Timestamp           int64   `json:"timestamp"`
@@ -21,13 +22,23 @@ type AprsMessage struct {
 	RawMessage          string  `json:"raw_message"`
 }
 
-func parseAprsPacket(message string, isAX25 bool) *AprsMessage {
+func parseAprsPacket(message string, isAX25 bool) (*AprsMessage, error) {
 	message_cstring := C.CString(message)
 	message_length := C.uint(len(message))
 
 	C.fap_init()
 
-	packet := C.fap_parseaprs(message_cstring, message_length, 0)
+	var ax25Flag int
+	if isAX25 {
+		ax25Flag = 1
+	} else {
+		ax25Flag = 0
+	}
+	packet := C.fap_parseaprs(message_cstring, message_length, C.short(ax25Flag))
+	if packet.error_code != nil {
+		return &AprsMessage{}, errors.New("Unable to parse APRS message")
+	}
+
 	parsedMsg := AprsMessage{
 		SourceCallsign:      C.GoString(packet.src_callsign),
 		DestinationCallsign: C.GoString(packet.dst_callsign),
@@ -40,5 +51,5 @@ func parseAprsPacket(message string, isAX25 bool) *AprsMessage {
 	C.fap_cleanup()
 	C.free(unsafe.Pointer(message_cstring))
 
-	return &parsedMsg
+	return &parsedMsg, nil
 }
