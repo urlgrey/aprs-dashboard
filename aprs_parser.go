@@ -28,13 +28,7 @@ func parseAprsPacket(message string, isAX25 bool) (*AprsMessage, error) {
 
 	C.fap_init()
 
-	var ax25Flag int
-	if isAX25 {
-		ax25Flag = 1
-	} else {
-		ax25Flag = 0
-	}
-	packet := C.fap_parseaprs(message_cstring, message_length, C.short(ax25Flag))
+	packet := C.fap_parseaprs(message_cstring, message_length, C.short(boolToInt(isAX25)))
 	if packet.error_code != nil {
 		return &AprsMessage{}, errors.New("Unable to parse APRS message")
 	}
@@ -52,4 +46,12 @@ func parseAprsPacket(message string, isAX25 bool) (*AprsMessage, error) {
 	C.free(unsafe.Pointer(message_cstring))
 
 	return &parsedMsg, nil
+}
+
+func boolToInt(b bool) int {
+	if b {
+		return 1
+	} else {
+		return 0
+	}
 }
