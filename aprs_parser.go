@@ -27,11 +27,14 @@ func parseAprsPacket(message string, isAX25 bool) *AprsMessage {
 
 	C.fap_init()
 
-	packet := C.fap_parseaprs(message_cstring, message_length, 1)
+	packet := C.fap_parseaprs(message_cstring, message_length, 0)
 	parsedMsg := AprsMessage{
 		SourceCallsign:      C.GoString(packet.src_callsign),
 		DestinationCallsign: C.GoString(packet.dst_callsign),
 	}
+	parsedMsg.Latitude = float64(C.double(*packet.latitude))
+	parsedMsg.Longitude = float64(C.double(*packet.longitude))
+	parsedMsg.RawMessage = C.GoStringN(packet.body, C.int(packet.body_len))
 
 	C.fap_free(packet)
 	C.fap_cleanup()
