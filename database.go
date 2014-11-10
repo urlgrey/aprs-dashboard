@@ -78,3 +78,16 @@ func (db *Database) Ping() error {
 	_, err := c.Do("PING")
 	return err
 }
+
+func (db *Database) Delete(key string) {
+	c := db.redisPool.Get()
+	defer c.Close()
+	c.Do("DEL", key)
+}
+
+func (db *Database) ListLength(key string) (int64, error) {
+	c := db.redisPool.Get()
+	defer c.Close()
+	r, err := c.Do("LLEN", key)
+	return r.(int64), err
+}
