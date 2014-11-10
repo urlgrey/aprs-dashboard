@@ -13,3 +13,6 @@ test:
 
 bench:
 	$(GO) test -bench .
+
+run: build
+	$(CURDIR)/aprs-dashboard

@@ -1,11 +1,18 @@
 package main
 
 import (
+	"encoding/json"
 	"github.com/go-martini/martini"
 	"github.com/martini-contrib/binding"
 	"log"
+	"net/http"
 	"os"
 )
+
+type RawAprsPacket struct {
+	Data   string `json:"data"`
+	IsAX25 bool   `json:"is_ax25"`
+}
 
 func main() {
 	redisHost := os.Getenv("APRS_REDIS_HOST")
@@ -19,8 +26,22 @@ func main() {
 	defer db.Close()
 
 	m := martini.Classic()
-	m.Put("/api/v1/message", binding.Bind(AprsMessage{}), func(message AprsMessage) string {
-		return "OK\n"
+	m.Put("/api/v1/message", binding.Bind(RawAprsPacket{}), func(message RawAprsPacket) (int, []byte) {
+		aprsMessage, parseErr := parseAprsPacket(message.Data, message.IsAX25)
+		if parseErr != nil {
+			body, _ := json.Marshal("{}")
+			return http.StatusNotAcceptable, body
+		} else {
+			if aprsMessage.SourceCallsign != "" {
+				db.PushHead(aprsMessage.SourceCallsign, aprsMessage)
+				body, _ := json.Marshal("{}")
+				return http.StatusOK, body
+			} else {
+				log.Println("Unable to find source callsign in APRS message")
+				body, _ := json.Marshal("{}")
+				return http.StatusNotAcceptable, body
+			}
+		}
 	})
 	m.Run()
 }

@@ -1,13 +1,4 @@
 {
-    "timestamp": 1415324169,
-    "callsign": "KK6DCI-2",
-    "status": "mobile",
-    "symbol": "running man",
-    "latitude": 0.0,
-    "longitude": 0.0,
-    "altitude": 0.0,
-    "speed": 50.0,
-    "temperature": 22.0,
-    "humidity": 0.75,
-    "raw_message": "foobaz"
+    "data": "WX4GSO-9>APN382,qAR,WD4LSS:!3545.18NL07957.08W#PHG5680/R,W,85NC,NCn Mount Shepherd Piedmont Triad NC",
+    "is_ax25": false
 }
