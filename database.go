@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"github.com/garyburd/redigo/redis"
 	"log"
+	"strings"
 	"time"
 )
 
@@ -58,7 +59,7 @@ func (db *Database) Close() {
 	db.redisPool.Close()
 }
 
-func (db *Database) PushHead(key string, message *AprsMessage) error {
+func (db *Database) RecordMessage(key string, message *AprsMessage) error {
 	jsonBytes, marshalErr := json.Marshal(message)
 	if marshalErr != nil {
 		log.Println("Error converting message to JSON", marshalErr)
@@ -67,7 +68,12 @@ func (db *Database) PushHead(key string, message *AprsMessage) error {
 		c := db.redisPool.Get()
 		defer c.Close()
 
-		_, err := c.Do("LPUSH", key, string(jsonBytes[:]))
+		var err error
+		_, err = c.Do("HINCRBY", "callsigns.set", key, 1)
+		if err == nil {
+			recordKey := strings.Join([]string{"callsign", key}, ".")
+			_, err = c.Do("LPUSH", recordKey, string(jsonBytes[:]))
+		}
 		return err
 	}
 }
@@ -89,5 +95,12 @@ func (db *Database) ListLength(key string) (int64, error) {
 	c := db.redisPool.Get()
 	defer c.Close()
 	r, err := c.Do("LLEN", key)
+	return r.(int64), err
+}
+
+func (db *Database) NumberOfCallsigns() (int64, error) {
+	c := db.redisPool.Get()
+	defer c.Close()
+	r, err := c.Do("HLEN", "callsigns.set")
 	return r.(int64), err
 }

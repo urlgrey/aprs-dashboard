@@ -33,7 +33,7 @@ func main() {
 			return http.StatusNotAcceptable, body
 		} else {
 			if aprsMessage.SourceCallsign != "" {
-				db.PushHead(aprsMessage.SourceCallsign, aprsMessage)
+				db.RecordMessage(aprsMessage.SourceCallsign, aprsMessage)
 				body, _ := json.Marshal("{}")
 				return http.StatusOK, body
 			} else {
