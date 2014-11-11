@@ -6,9 +6,10 @@ package main
 import "C"
 import "unsafe"
 import "errors"
+import "time"
 
 type AprsMessage struct {
-	Timestamp           int64   `json:"timestamp"`
+	Timestamp           int32   `json:"timestamp"`
 	SourceCallsign      string  `json:"src_callsign"`
 	DestinationCallsign string  `json:"dst_callsign"`
 	Status              string  `json:"status"`
@@ -36,10 +37,11 @@ func parseAprsPacket(message string, isAX25 bool) (*AprsMessage, error) {
 	parsedMsg := AprsMessage{
 		SourceCallsign:      C.GoString(packet.src_callsign),
 		DestinationCallsign: C.GoString(packet.dst_callsign),
+		Timestamp:           int32(time.Now().Unix()),
+		Latitude:            float64(C.double(*packet.latitude)),
+		Longitude:           float64(C.double(*packet.longitude)),
+		RawMessage:          C.GoStringN(packet.body, C.int(packet.body_len)),
 	}
-	parsedMsg.Latitude = float64(C.double(*packet.latitude))
-	parsedMsg.Longitude = float64(C.double(*packet.longitude))
-	parsedMsg.RawMessage = C.GoStringN(packet.body, C.int(packet.body_len))
 
 	C.fap_free(packet)
 	C.fap_cleanup()

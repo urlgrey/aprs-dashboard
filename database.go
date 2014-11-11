@@ -5,7 +5,6 @@ import (
 	"errors"
 	"github.com/garyburd/redigo/redis"
 	"log"
-	"strings"
 	"time"
 )
 
@@ -67,7 +66,7 @@ func (db *Database) Close() {
 	db.redisPool.Close()
 }
 
-func (db *Database) RecordMessage(key string, message *AprsMessage) error {
+func (db *Database) RecordMessage(callsign string, message *AprsMessage) error {
 	jsonBytes, marshalErr := json.Marshal(message)
 	if marshalErr != nil {
 		log.Println("Error converting message to JSON", marshalErr)
@@ -77,10 +76,9 @@ func (db *Database) RecordMessage(key string, message *AprsMessage) error {
 		defer c.Close()
 
 		var err error
-		_, err = c.Do("HINCRBY", "callsigns.set", key, 1)
+		_, err = c.Do("HINCRBY", "callsigns.set", callsign, 1)
 		if err == nil {
-			recordKey := strings.Join([]string{"callsign", key}, ".")
-			_, err = c.Do("LPUSH", recordKey, string(jsonBytes[:]))
+			_, err = c.Do("LPUSH", "callsign."+callsign, string(jsonBytes[:]))
 		}
 		return err
 	}
@@ -99,11 +97,17 @@ func (db *Database) Delete(key string) {
 	c.Do("DEL", key)
 }
 
-func (db *Database) NumberOfMessagesForCallsign(key string) (int64, error) {
+func (db *Database) NumberOfMessagesForCallsign(callsign string) (int64, error) {
 	c := db.redisPool.Get()
 	defer c.Close()
-	r, err := c.Do("LLEN", "callsign."+key)
+	r, err := c.Do("LLEN", "callsign."+callsign)
 	return r.(int64), err
+}
+
+func (db *Database) PaginatedMessagesForCallsign(callsign string, start int64, stop int64) ([]string, error) {
+	c := db.redisPool.Get()
+	defer c.Close()
+	return redis.Strings(redis.Values(c.Do("LRANGE", "callsign."+callsign, start, stop)))
 }
 
 func (db *Database) NumberOfCallsigns() (int64, error) {
@@ -113,17 +117,29 @@ func (db *Database) NumberOfCallsigns() (int64, error) {
 	return r.(int64), err
 }
 
-func (db *Database) GetRecordsForCallsign(callsign string, page string) (PaginatedCallsignResults, error) {
+func (db *Database) GetRecordsForCallsign(callsign string, page int64) (PaginatedCallsignResults, error) {
 	var err error
 	totalNumberOfRecords, err := db.NumberOfMessagesForCallsign(callsign)
 	if err == nil {
 		numberOfPages := (totalNumberOfRecords / 10) + 1
-		records := []AprsMessage{}
+		startingRecord := (page - 1) * 10
+		endingRecord := (page * 10) - 1
+		resultingMessages := []AprsMessage{}
+		messages, _ := db.PaginatedMessagesForCallsign(callsign, startingRecord, endingRecord)
+		for _, message := range messages {
+			var m AprsMessage
+			unmarshalErr := json.Unmarshal([]byte(message), &m)
+			if unmarshalErr == nil {
+				resultingMessages = append(resultingMessages, m)
+			} else {
+				log.Println("Unable to parse message, skipping")
+			}
+		}
 		results := PaginatedCallsignResults{
-			Page:                 1,
+			Page:                 page,
 			NumberOfPages:        numberOfPages,
 			TotalNumberOfRecords: totalNumberOfRecords,
-			Records:              records,
+			Records:              resultingMessages,
 		}
 		return results, nil
 	} else {
