@@ -55,8 +55,6 @@ func NewDatabase(server string, password string, database string) *Database {
 	c.Close()
 	if err != nil {
 		log.Fatal("Error pinging Redis", err)
-	} else {
-		log.Println("Connection ping succeeded")
 	}
 
 	return &db
