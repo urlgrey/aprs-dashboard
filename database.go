@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"github.com/garyburd/redigo/redis"
 	"log"
 	"strings"
@@ -10,6 +11,12 @@ import (
 
 type Database struct {
 	redisPool *redis.Pool
+}
+
+type PaginatedCallsignResults struct {
+	Page int64 `json:"page"`
+	NumberOfPages int64 `json:"number_of_pages"`
+	Records []AprsMessage `json:"records"`
 }
 
 func NewDatabase(server string, password string, database string) *Database {
@@ -104,3 +111,21 @@ func (db *Database) NumberOfCallsigns() (int64, error) {
 	r, err := c.Do("HLEN", "callsigns.set")
 	return r.(int64), err
 }
+
+func (db *Database) GetRecordsForCallsign(callsign string, page string) (PaginatedCallsignResults, error) {
+	var err error
+	totalNumberOfRecords, err := db.ListLength(callsign)
+	if err == nil {
+		numberOfPages := (totalNumberOfRecords / 10) + 1
+		records := []AprsMessage{}
+		results := PaginatedCallsignResults{
+			Page: 1,
+			NumberOfPages: numberOfPages,
+			Records: records,
+		}
+		return results, nil
+	} else {
+		return PaginatedCallsignResults{}, errors.New("Unable to get the number of records for the specified callsign")
+	}
+}
+
