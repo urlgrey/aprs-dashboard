@@ -2,12 +2,22 @@ package main
 
 import (
 	"testing"
+	"time"
 )
 
 func Test_ParseAprsNonAX25PacketWithLocation(t *testing.T) {
-	msg, err := parseAprsPacket("K7SSW>APRS,TCPXX*,qAX,CWOP-5:@100235z4743.22N/12222.41W_135/000g000t047r004p009P008h95b10132lOww_0.86.5", false)
+	timeBeforeTest := int32(time.Now().Unix())
+	p := NewParser()
+	defer p.Finish()
+
+	msg, err := p.parseAprsPacket("K7SSW>APRS,TCPXX*,qAX,CWOP-5:@100235z4743.22N/12222.41W_135/000g000t047r004p009P008h95b10132lOww_0.86.5", false)
+	timeAfterTest := int32(time.Now().Unix())
+
 	if err != nil {
 		t.Error("Error was unexpectedly non-nil", err)
+	}
+	if msg.Timestamp < timeBeforeTest || msg.Timestamp > timeAfterTest {
+		t.Error("Timestamp was set incorrectly")
 	}
 	if msg.SourceCallsign != "K7SSW" {
 		t.Error("Source callsign not parsed correctly", msg.SourceCallsign)
@@ -24,7 +34,10 @@ func Test_ParseAprsNonAX25PacketWithLocation(t *testing.T) {
 }
 
 func Test_ParseAprsUnsupportedFormatPacket(t *testing.T) {
-	msg, err := parseAprsPacket("ZS6EY>APN982,ZS0TRG*,WIDE3-2,qAS,ZS6EY-1:g {UIV32N}", false)
+	p := NewParser()
+	defer p.Finish()
+
+	msg, err := p.parseAprsPacket("ZS6EY>APN982,ZS0TRG*,WIDE3-2,qAS,ZS6EY-1:g {UIV32N}", false)
 	if err == nil {
 		t.Error("Error was unexpectedly nil", err)
 	}
@@ -42,8 +55,20 @@ func Test_ParseAprsUnsupportedFormatPacket(t *testing.T) {
 	}
 }
 
-func Benchmark_ParseAprsPacket(b *testing.B) {
+func Benchmark_ParseValidAprsPacket(b *testing.B) {
+	p := NewParser()
+	defer p.Finish()
+
 	for i := 0; i < b.N; i++ {
-		parseAprsPacket("K7SSW>APRS,TCPXX*,qAX,CWOP-5:@100235z4743.22N/12222.41W_135/000g000t047r004p009P008h95b10132lOww_0.86.5", false)
+		p.parseAprsPacket("K7SSW>APRS,TCPXX*,qAX,CWOP-5:@100235z4743.22N/12222.41W_135/000g000t047r004p009P008h95b10132lOww_0.86.5", false)
+	}
+}
+
+func Benchmark_ParseInvalidAprsPacket(b *testing.B) {
+	p := NewParser()
+	defer p.Finish()
+
+	for i := 0; i < b.N; i++ {
+		p.parseAprsPacket("ZS6EY>APN982,ZS0TRG*,WIDE3-2,qAS,ZS6EY-1:g {UIV32N}", false)
 	}
 }

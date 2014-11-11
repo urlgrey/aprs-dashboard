@@ -23,29 +23,37 @@ type AprsMessage struct {
 	RawMessage          string  `json:"raw_message"`
 }
 
-func parseAprsPacket(message string, isAX25 bool) (*AprsMessage, error) {
+type AprsParser struct{}
+
+func NewParser() *AprsParser {
+	C.fap_init()
+	return &AprsParser{}
+}
+
+func (p *AprsParser) Finish() {
+	defer C.fap_cleanup()
+}
+
+func (p *AprsParser) parseAprsPacket(message string, isAX25 bool) (*AprsMessage, error) {
 	message_cstring := C.CString(message)
 	message_length := C.uint(len(message))
 
-	C.fap_init()
-
 	packet := C.fap_parseaprs(message_cstring, message_length, C.short(boolToInt(isAX25)))
+	defer C.fap_free(packet)
+	defer C.free(unsafe.Pointer(message_cstring))
+
 	if packet.error_code != nil {
 		return &AprsMessage{}, errors.New("Unable to parse APRS message")
 	}
 
 	parsedMsg := AprsMessage{
+		Timestamp:           int32(time.Now().Unix()),
 		SourceCallsign:      C.GoString(packet.src_callsign),
 		DestinationCallsign: C.GoString(packet.dst_callsign),
-		Timestamp:           int32(time.Now().Unix()),
 		Latitude:            float64(C.double(*packet.latitude)),
 		Longitude:           float64(C.double(*packet.longitude)),
 		RawMessage:          C.GoStringN(packet.body, C.int(packet.body_len)),
 	}
-
-	C.fap_free(packet)
-	C.fap_cleanup()
-	C.free(unsafe.Pointer(message_cstring))
 
 	return &parsedMsg, nil
 }

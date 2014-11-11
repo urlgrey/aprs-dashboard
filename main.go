@@ -26,9 +26,12 @@ func main() {
 	db := NewDatabase(redisHost, redisPassword, redisDatabase)
 	defer db.Close()
 
+	parser := NewParser()
+	defer parser.Finish()
+
 	m := martini.Classic()
 	m.Put("/api/v1/message", binding.Bind(RawAprsPacket{}), func(message RawAprsPacket) (int, []byte) {
-		aprsMessage, parseErr := parseAprsPacket(message.Data, message.IsAX25)
+		aprsMessage, parseErr := parser.parseAprsPacket(message.Data, message.IsAX25)
 		if parseErr != nil {
 			body, _ := json.Marshal("{}")
 			return http.StatusNotAcceptable, body
