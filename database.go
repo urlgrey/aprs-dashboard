@@ -14,9 +14,10 @@ type Database struct {
 }
 
 type PaginatedCallsignResults struct {
-	Page int64 `json:"page"`
-	NumberOfPages int64 `json:"number_of_pages"`
-	Records []AprsMessage `json:"records"`
+	Page                 int64         `json:"page"`
+	NumberOfPages        int64         `json:"number_of_pages"`
+	TotalNumberOfRecords int64         `json:"total_number_of_records"`
+	Records              []AprsMessage `json:"records"`
 }
 
 func NewDatabase(server string, password string, database string) *Database {
@@ -98,10 +99,10 @@ func (db *Database) Delete(key string) {
 	c.Do("DEL", key)
 }
 
-func (db *Database) ListLength(key string) (int64, error) {
+func (db *Database) NumberOfMessagesForCallsign(key string) (int64, error) {
 	c := db.redisPool.Get()
 	defer c.Close()
-	r, err := c.Do("LLEN", key)
+	r, err := c.Do("LLEN", "callsign."+key)
 	return r.(int64), err
 }
 
@@ -114,18 +115,18 @@ func (db *Database) NumberOfCallsigns() (int64, error) {
 
 func (db *Database) GetRecordsForCallsign(callsign string, page string) (PaginatedCallsignResults, error) {
 	var err error
-	totalNumberOfRecords, err := db.ListLength(callsign)
+	totalNumberOfRecords, err := db.NumberOfMessagesForCallsign(callsign)
 	if err == nil {
 		numberOfPages := (totalNumberOfRecords / 10) + 1
 		records := []AprsMessage{}
 		results := PaginatedCallsignResults{
-			Page: 1,
-			NumberOfPages: numberOfPages,
-			Records: records,
+			Page:                 1,
+			NumberOfPages:        numberOfPages,
+			TotalNumberOfRecords: totalNumberOfRecords,
+			Records:              records,
 		}
 		return results, nil
 	} else {
 		return PaginatedCallsignResults{}, errors.New("Unable to get the number of records for the specified callsign")
 	}
 }
-

@@ -25,7 +25,7 @@ func Test_RecordMessage(t *testing.T) {
 	var length int64
 
 	// verify item is not on list
-	length, err = db.ListLength("callsign.foo")
+	length, err = db.NumberOfMessagesForCallsign("foo")
 	if 0 != length {
 		t.Error("List length should be one", length)
 	}
@@ -44,7 +44,7 @@ func Test_RecordMessage(t *testing.T) {
 	}
 
 	// verify item is on list
-	length, err = db.ListLength("callsign.foo")
+	length, err = db.NumberOfMessagesForCallsign("foo")
 	if 1 != length {
 		t.Error("List length should be one", length)
 	}
