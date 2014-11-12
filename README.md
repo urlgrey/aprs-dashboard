@@ -3,9 +3,69 @@ APRS Dashboard
 
 Service API to record and query for Automated Position Reporting System (APRS) messages.
 
+Installing Dynamic Redis
+========================
+Dynamic Redis is needed for the Geo module that allows for geo-based searches of data in Redis.  More information about Dynamic Redis can be found on the project site:
+https://matt.sh/dynamic-redis
+
+```shell
+mkdir -p ~/repos
+cd ~/repos
+git clone https://github.com/mattsta/redis
+cd redis
+git checkout dynamic-redis-unstable
+make
+make test
+```
+
+If the build succeeded, then run the Redis server:
+
+```shell
+~/repos/redis/src/redis &
+```
+
+Build and Load the Geo Module
+=============================
+
+```shell
+cd ~/repos
+git clone https://github.com/mattsta/krmt
+cd krmt
+make -j
+~/repos/redis/src/redis-cli config set module-add `pwd`/geo.so
+```
+
+You should see output like the following:
+
+```shell
+79865:M 12 Nov 07:04:45.783 * Loading new [/Users/scott/repos/krmt/geo.so] module.
+79865:M 12 Nov 07:04:45.783 * Added command geoadd [/Users/scott/repos/krmt/geo.so]
+79865:M 12 Nov 07:04:45.783 * Added command georadius [/Users/scott/repos/krmt/geo.so]
+79865:M 12 Nov 07:04:45.783 * Added command georadiusbymember [/Users/scott/repos/krmt/geo.so]
+79865:M 12 Nov 07:04:45.783 * Added command geoencode [/Users/scott/repos/krmt/geo.so]
+79865:M 12 Nov 07:04:45.783 * Added command geodecode [/Users/scott/repos/krmt/geo.so]
+79865:M 12 Nov 07:04:45.783 * Module [/Users/scott/repos/krmt/geo.so] loaded 5 commands.
+79865:M 12 Nov 07:04:45.783 * Running load function of module [/Users/scott/repos/krmt/geo.so].
+OK
+```
+
+Building APRS Dashboard
+=======================
+```shell
+make build
+```
+
+Running APRS Dashboard
+=======================
+```shell
+APRS_REDIS_HOST=":6379"
+./aprs-dashboard
+```
+
 Record a sample message
 =======================
 Start the Redis server if not already running.
+
 
 Run the APRS Dashboard server process:
 ```shell
