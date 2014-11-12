@@ -18,14 +18,19 @@ type AprsMessage struct {
 	Longitude           float64        `json:"longitude"`
 	Altitude            float64        `json:"altitude"`
 	Speed               float64        `json:"speed"`
+	Course              uint8          `json:"course"`
 	Weather             *WeatherReport `json:"weather_report"`
 	RawMessage          string         `json:"raw_message"`
 }
 
 type WeatherReport struct {
-	Temperature    float64 `json:"temp"`
-	Humidity       uint8   `json:"humidity"`
-	InsideHumidity uint8   `json:"humidity_in"`
+	Temperature       float64 `json:"temp"`
+	InsideTemperature float64 `json:"temp_in"`
+	Humidity          uint8   `json:"humidity"`
+	InsideHumidity    uint8   `json:"humidity_in"`
+	WindGust          float64 `json:"wind_gust"`
+	WindDirection     uint8   `json:"wind_dir"`
+	WindSpeed         float64 `json:"wind_speed"`
 }
 
 type AprsParser struct{}
@@ -57,14 +62,21 @@ func (p *AprsParser) parseAprsPacket(message string, isAX25 bool) (*AprsMessage,
 		DestinationCallsign: C.GoString(packet.dst_callsign),
 		Latitude:            parseNilableFloat(packet.latitude),
 		Longitude:           parseNilableFloat(packet.longitude),
+		Speed:               parseNilableFloat(packet.speed),
+		Course:              parseNilableUInt(packet.course),
+		Altitude:            parseNilableFloat(packet.altitude),
 		RawMessage:          C.GoStringN(packet.body, C.int(packet.body_len)),
 	}
 
 	if packet.wx_report != nil {
 		w := WeatherReport{
-			Temperature:    parseNilableFloat(packet.wx_report.temp),
-			Humidity:       parseNilableUInt(packet.wx_report.humidity),
-			InsideHumidity: parseNilableUInt(packet.wx_report.humidity_in),
+			Temperature:       parseNilableFloat(packet.wx_report.temp),
+			InsideTemperature: parseNilableFloat(packet.wx_report.temp_in),
+			Humidity:          parseNilableUInt(packet.wx_report.humidity),
+			InsideHumidity:    parseNilableUInt(packet.wx_report.humidity_in),
+			WindGust:          parseNilableFloat(packet.wx_report.wind_gust),
+			WindDirection:     parseNilableUInt(packet.wx_report.wind_dir),
+			WindSpeed:         parseNilableFloat(packet.wx_report.wind_speed),
 		}
 		parsedMsg.Weather = &w
 	}
