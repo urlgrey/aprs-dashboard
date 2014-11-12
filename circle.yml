@@ -6,18 +6,16 @@ machine:
     - wget http://www.pakettiradio.net/downloads/libfap/1.3/deb_amd64/libfap-dev_1.3_amd64.deb
     - wget http://www.pakettiradio.net/downloads/libfap/1.3/deb_amd64/libfap5_1.3_amd64.deb
     - sudo dpkg -i libfap-dev_1.3_amd64.deb libfap5_1.3_amd64.deb
-    - mkdir -p ${HOME}/repos
-    - cd ${HOME}/repos
     - git clone https://github.com/mattsta/redis
-    - cd ${HOME}/repos/redis
+    - cd redis
     - git checkout dynamic-redis-unstable
     - make
-    - ${HOME}/redis/src/redis-server --port 7379
-    - cd ${HOME}/repos
+    - src/redis-server --port 7379
+    - cd ${HOME}
     - git clone https://github.com/mattsta/krmt
-    - cd ${HOME}/repos/krmt
+    - cd krmt
     - make -j
-    - ${HOME}/repos/redis/src/redis-cli config set module-add `pwd`/geo.so
+    - ${HOME}/redis/src/redis-cli config set module-add `pwd`/geo.so
   environment:
     GOPATH: ${HOME}/aprs-dashboard/_vendor:${HOME}/aprs-dashboard
     GOROOT: ${HOME}/go
