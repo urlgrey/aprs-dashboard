@@ -64,24 +64,6 @@ func (db *Database) Close() {
 	db.redisPool.Close()
 }
 
-func (db *Database) RecordMessage(callsign string, message *AprsMessage) error {
-	jsonBytes, marshalErr := json.Marshal(message)
-	if marshalErr != nil {
-		log.Println("Error converting message to JSON", marshalErr)
-		return nil
-	} else {
-		c := db.redisPool.Get()
-		defer c.Close()
-
-		var err error
-		_, err = c.Do("HINCRBY", "callsigns.set", callsign, 1)
-		if err == nil {
-			_, err = c.Do("LPUSH", "callsign."+callsign, string(jsonBytes[:]))
-		}
-		return err
-	}
-}
-
 func (db *Database) Ping() error {
 	c := db.redisPool.Get()
 	defer c.Close()
@@ -93,6 +75,29 @@ func (db *Database) Delete(key string) {
 	c := db.redisPool.Get()
 	defer c.Close()
 	c.Do("DEL", key)
+}
+
+func (db *Database) RecordMessage(callsign string, message *AprsMessage) error {
+	jsonBytes, marshalErr := json.Marshal(message)
+	if marshalErr != nil {
+		log.Println("Error converting message to JSON", marshalErr)
+		return nil
+	} else {
+		c := db.redisPool.Get()
+		defer c.Close()
+
+		var err error
+		_, err = c.Do("HINCRBY", "callsigns.set", callsign, 1)
+		msgString := string(jsonBytes[:])
+		if err == nil {
+			_, err = c.Do("LPUSH", "callsign."+callsign, msgString)
+		}
+
+		if err == nil && message.IncludesPosition {
+			_, err = c.Do("geoadd", "positions", message.Latitude, message.Longitude, msgString)
+		}
+		return err
+	}
 }
 
 func (db *Database) NumberOfMessagesForCallsign(callsign string) (int64, error) {

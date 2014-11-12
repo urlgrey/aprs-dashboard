@@ -16,6 +16,7 @@ type AprsMessage struct {
 	Symbol              string         `json:"symbol"`
 	Latitude            float64        `json:"latitude"`
 	Longitude           float64        `json:"longitude"`
+	IncludesPosition    bool           `json:"includes_position"`
 	Altitude            float64        `json:"altitude"`
 	Speed               float64        `json:"speed"`
 	Course              uint8          `json:"course"`
@@ -66,6 +67,11 @@ func (p *AprsParser) parseAprsPacket(message string, isAX25 bool) (*AprsMessage,
 		Course:              parseNilableUInt(packet.course),
 		Altitude:            parseNilableFloat(packet.altitude),
 		RawMessage:          C.GoStringN(packet.body, C.int(packet.body_len)),
+	}
+	if packet.latitude != nil && packet.longitude != nil {
+		parsedMsg.IncludesPosition = true
+	} else {
+		parsedMsg.IncludesPosition = false
 	}
 
 	if packet.wx_report != nil {

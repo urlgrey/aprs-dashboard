@@ -99,4 +99,5 @@ func Benchmark_RetrieveMiddleEntriesForCallsign(b *testing.B) {
 func cleanup(db *Database) {
 	db.Delete("callsign.foo")
 	db.Delete("callsigns.set")
+	db.Delete("positions")
 }
