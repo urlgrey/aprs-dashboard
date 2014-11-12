@@ -1,11 +1,12 @@
 package main
 
 import (
+	"os"
 	"testing"
 )
 
 func Test_NewDatabase(t *testing.T) {
-	db := NewDatabase(":6379", "", "")
+	db := NewDatabase(os.Getenv("APRS_REDIS_HOST"), "", "")
 	defer db.Close()
 	err := db.Ping()
 	if err != nil {
@@ -14,7 +15,7 @@ func Test_NewDatabase(t *testing.T) {
 }
 
 func Test_RecordMessage(t *testing.T) {
-	db := NewDatabase(":6379", "", "")
+	db := NewDatabase(os.Getenv("APRS_REDIS_HOST"), "", "")
 	defer db.Close()
 	cleanup(db)
 	defer cleanup(db)
@@ -55,7 +56,7 @@ func Test_RecordMessage(t *testing.T) {
 }
 
 func Benchmark_RetrieveMostRecentEntriesForCallsign(b *testing.B) {
-	db := NewDatabase(":6379", "", "")
+	db := NewDatabase(os.Getenv("APRS_REDIS_HOST"), "", "")
 	defer db.Close()
 	cleanup(db)
 	defer cleanup(db)
@@ -76,7 +77,7 @@ func Benchmark_RetrieveMostRecentEntriesForCallsign(b *testing.B) {
 }
 
 func Benchmark_RetrieveMiddleEntriesForCallsign(b *testing.B) {
-	db := NewDatabase(":6379", "", "")
+	db := NewDatabase(os.Getenv("APRS_REDIS_HOST"), "", "")
 	defer db.Close()
 	cleanup(db)
 	defer cleanup(db)

@@ -21,7 +21,7 @@ make test
 If the build succeeded, then run the Redis server:
 
 ```shell
-~/repos/redis/src/redis &
+~/repos/redis/src/redis-server &
 ```
 
 Build and Load the Geo Module
