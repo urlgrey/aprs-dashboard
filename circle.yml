@@ -8,6 +8,8 @@ machine:
     - sudo dpkg -i libfap-dev_1.3_amd64.deb libfap5_1.3_amd64.deb
     - git clone https://github.com/mattsta/redis && cd redis && git checkout dynamic-redis-unstable && make && src/redis-server --port 7379 &
     - cd ${HOME}
+    - git clone https://github.com/lloyd/yajl && cd yajl && ./configure && make
+    - cd ${HOME}
     - git clone https://github.com/mattsta/krmt && cd krmt && make -j && ${HOME}/redis/src/redis-cli config set module-add `pwd`/geo.so
   environment:
     GOPATH: ${HOME}/aprs-dashboard/_vendor:${HOME}/aprs-dashboard
