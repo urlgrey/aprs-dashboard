@@ -14,4 +14,4 @@ machine:
     APRS_REDIS_HOST: ":7379"
 test:
   override:
-    - make build
+    - make build test
