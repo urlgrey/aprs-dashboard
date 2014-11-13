@@ -113,3 +113,34 @@ Observe output resembling the following in the APRS Dashboard console output:
 [martini] Started PUT /api/v1/message for 127.0.0.1:63695
 [martini] Completed 200 OK in 297.553us
 ```
+
+### Retrieve Paginated List of Messages Sent by Callsign
+
+#### Example
+```shell
+curl -H "Accept: application/json" http://127.0.0.1:3000/api/v1/callsign/WX4GSO?page=1
+```
+
+##### Response
+| Field  | Type | Description  |
+|---|---|---|
+| page  | integer | Page associated with these results |
+| number_of_pages  |  integer  | Total number of pages for this callsign |
+| total_number_of_records  |  integer  | Total number of records for this callsign |
+| total_number_of_records  |  integer  | Total number of records for this callsign |
+| records  |  Array of ```APRS Message```  | An array of APRS Messages, can be empty |
+
+##### APRS Message
+| Field  | Type | Description  |
+|---|---|---|
+| timestamp  | integer | Unix epoch time when APRS message was received |
+| src_callsign  |  string  | Callsign that sent the message |
+| dst_callsign  |  string  | Callsign of message's intended recipient |
+| latitude  |  float  | Latitude |
+| longitude  |  float  | Longitude  |
+| includes_position  |  boolean  | Indicates whether message contained location information |
+| altitude  |  float  | Altitude (meters) |
+| speed  |  float  | Speed (kilometers/hour) |
+| course  |  unsigned integer  | Direction in degrees (0-360) |
+| weather_report  |  Weather Report  | Weather data, can be null |
+| raw_message  |  string  | Raw APRS messages received by service |
