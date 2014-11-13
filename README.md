@@ -1,7 +1,9 @@
-APRS Dashboard
+APRS Dashboard [![Circle CI](https://circleci.com/gh/urlgrey/aprs-dashboard.png?style=badge)](https://circleci.com/gh/urlgrey/aprs-dashboard)
 ==============
 
 Service API to record and query for Automated Position Reporting System (APRS) messages.
+
+Installation
 
 Installing Dynamic Redis
 ========================
