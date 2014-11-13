@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"github.com/garyburd/redigo/redis"
 	"log"
 	"time"
@@ -95,6 +96,10 @@ func (db *Database) RecordMessage(sourceCallsign string, message *AprsMessage) e
 
 		if err == nil && message.IncludesPosition {
 			_, err = c.Do("geoadd", "positions", message.Latitude, message.Longitude, sourceCallsign)
+
+			if err == nil {
+				_, err = c.Do("geoadd", "positions."+getFormattedTime(time.Now()), message.Latitude, message.Longitude, sourceCallsign)
+			}
 		}
 		return err
 	}
@@ -148,4 +153,12 @@ func (db *Database) GetRecordsForCallsign(callsign string, page int64) (Paginate
 	} else {
 		return PaginatedCallsignResults{}, errors.New("Unable to get the number of records for the specified callsign")
 	}
+}
+
+func getFormattedTime(t time.Time) string {
+	utc, _ := time.LoadLocation("UTC")
+	utcTime := t.In(utc)
+	return fmt.Sprintf("%d.%02d.%02d.%02d",
+		utcTime.Year(), utcTime.Month(), utcTime.Day(),
+		utcTime.Hour())
 }

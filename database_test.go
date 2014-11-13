@@ -3,6 +3,7 @@ package main
 import (
 	"os"
 	"testing"
+	"time"
 )
 
 func Test_NewDatabase(t *testing.T) {
@@ -55,6 +56,29 @@ func Test_RecordMessage(t *testing.T) {
 	}
 }
 
+func Test_getFormattedTime(t *testing.T) {
+	const longForm = "Jan 2, 2006 at 3:04pm (MST)"
+	timeVal, _ := time.Parse(longForm, "Feb 3, 2013 at 7:54pm (PST)")
+	timeStr := getFormattedTime(timeVal)
+	if timeStr != "2013.02.04.03" {
+		t.Error("Formatted time string is incorrect:", timeStr)
+	}
+}
+
+func Benchmark_RecordMessage(b *testing.B) {
+	db := NewDatabase(os.Getenv("APRS_REDIS_HOST"), "", "")
+	defer db.Close()
+	cleanup(db)
+	defer cleanup(db)
+
+	p := NewParser()
+	defer p.Finish()
+	msg, _ := p.parseAprsPacket("K7SSW>APRS,TCPXX*,qAX,CWOP-5:@100235z4743.22N/12222.41W_135/000g000t047r004p009P008h95b10132lOww_0.86.5", false)
+
+	for i := 0; i < b.N; i++ {
+		db.RecordMessage(msg.SourceCallsign, msg)
+	}
+}
 func Benchmark_RetrieveMostRecentEntriesForCallsign(b *testing.B) {
 	db := NewDatabase(os.Getenv("APRS_REDIS_HOST"), "", "")
 	defer db.Close()
@@ -97,8 +121,15 @@ func Benchmark_RetrieveMiddleEntriesForCallsign(b *testing.B) {
 	}
 }
 
+func Benchmark_GetFormattedTime(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		getFormattedTime(time.Now())
+	}
+}
+
 func cleanup(db *Database) {
 	db.Delete("callsign.foo")
 	db.Delete("callsigns.set")
 	db.Delete("positions")
+	db.Delete("positions." + getFormattedTime(time.Now()))
 }
