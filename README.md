@@ -86,7 +86,7 @@ API
 Send an APRS message in the following JSON format:
 
 | Field  | Required?  | Type | Description  |
-|---|---|---|
+|---|---|---|---|
 | data  | yes  | string | ASCII-encoded APRS message |
 | is_ax25  |  yes | boolean  | Indicates whether the message is AX.25 encoded |
 
