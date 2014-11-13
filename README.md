@@ -4,10 +4,10 @@ APRS Dashboard [![Circle CI](https://circleci.com/gh/urlgrey/aprs-dashboard.png?
 Service API to record and query for Automated Position Reporting System (APRS) messages.
 
 Installation
+------------
 
-Installing Dynamic Redis
-========================
-Dynamic Redis is needed for the Geo module that allows for geo-based searches of data in Redis.  More information about Dynamic Redis can be found on the project site:
+### Dynamic Redis
+Dynamic Redis is needed for the Geo module.  More information about Dynamic Redis can be found on the project site:
 https://matt.sh/dynamic-redis
 
 ```shell
@@ -26,8 +26,8 @@ If the build succeeded, then run the Redis server:
 ~/repos/redis/src/redis-server &
 ```
 
-Build and Load the Geo Module
-=============================
+### Redis Geo Module
+The Redis Geo module makes it possible to store & query for geo-tagged data in Redis.
 
 ```shell
 cd ~/repos
@@ -51,42 +51,61 @@ You should see output like the following:
 OK
 ```
 
-Building APRS Dashboard
-=======================
+### APRS Dashboard
+
+#### Build
 ```shell
 make build
 ```
 
-Running APRS Dashboard
-=======================
-To limit access to the PUT API, set the `APRS_API_TOKENS` environment variable with a comma-separated list of API tokens:
+#### Test
 ```shell
-export APRS_API_TOKENS="secret123"
+export APRS_REDIS_HOST=":6379"
+make test
 ```
 
+#### Benchmark
 ```shell
-APRS_REDIS_HOST=":6379"
+export APRS_REDIS_HOST=":6379"
+make bench
+```
+
+#### Run
+
+**Note:** To limit access to the PUT API, optionally set the `APRS_API_TOKENS` environment variable with a comma-separated list of API tokens.  Default behavior is to allow access without the use of a token.
+```shell
+export APRS_API_TOKENS="secret123"
+export APRS_REDIS_HOST=":6379"
 ./aprs-dashboard
 ```
 
-Record a sample message
-=======================
-Start the Redis server if not already running.
+API
+---
 
+### Record an APRS Message
+Send an APRS message in the following JSON format:
 
-Run the APRS Dashboard server process:
-```shell
-$ ./aprs-dashboard
+| Field  | Required?  | Type | Description  |
+|---|---|---|
+| data  | yes  | string | ASCII-encoded APRS message |
+| is_ax25  |  yes | boolean  | Indicates whether the message is AX.25 encoded |
+
+#### Sample Payload
+```json
+{
+    "data": "WX4GSO-9>APN382,qAR,WD4LSS:!3545.18NL07957.08W#PHG5680/R,W,85NC,NCn Mount Shepherd Piedmont Triad NC",
+    "is_ax25": false
+}
 ```
 
-Issue a CURL to the server to record data in the ```examples/sample_message.json``` file provided.
+#### Example
 ```shell
-$ curl -X PUT -H "Content-Type: application/json" http://127.0.0.1:3000/api/v1/message -d @examples/sample_message.json
+curl -X PUT -H "Content-Type: application/json" http://127.0.0.1:3000/api/v1/message -d @examples/sample_message.json
 ```
 
-If access is limited by API token (see "Running APRS Dashboard" section), then include an `X-API-KEY` header:
+If access is limited by API token (see "Run" section), then include an `X-API-KEY` header:
 ```shell
-$ curl -X PUT -H "X-API-KEY: secret123" -H "Content-Type: application/json" http://127.0.0.1:3000/api/v1/message -d @examples/sample_message.json
+curl -X PUT -H "X-API-KEY: secret123" -H "Content-Type: application/json" http://127.0.0.1:3000/api/v1/message -d @examples/sample_message.json
 ```
 
 Observe output resembling the following in the APRS Dashboard console output:
@@ -94,5 +113,3 @@ Observe output resembling the following in the APRS Dashboard console output:
 [martini] Started PUT /api/v1/message for 127.0.0.1:63695
 [martini] Completed 200 OK in 297.553us
 ```
-
-Observe the text ```OK``` in the terminal where the ```curl``` command was run.
