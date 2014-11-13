@@ -4,9 +4,12 @@ package main
 // #include <fap.h>
 // #include <stdlib.h>
 import "C"
-import "unsafe"
-import "errors"
-import "time"
+import (
+	"errors"
+	"strings"
+	"time"
+	"unsafe"
+)
 
 type AprsMessage struct {
 	Timestamp           int32          `json:"timestamp"`
@@ -59,8 +62,8 @@ func (p *AprsParser) parseAprsPacket(message string, isAX25 bool) (*AprsMessage,
 
 	parsedMsg := AprsMessage{
 		Timestamp:           int32(time.Now().Unix()),
-		SourceCallsign:      C.GoString(packet.src_callsign),
-		DestinationCallsign: C.GoString(packet.dst_callsign),
+		SourceCallsign:      strings.ToUpper(C.GoString(packet.src_callsign)),
+		DestinationCallsign: strings.ToUpper(C.GoString(packet.dst_callsign)),
 		Latitude:            parseNilableFloat(packet.latitude),
 		Longitude:           parseNilableFloat(packet.longitude),
 		Speed:               parseNilableFloat(packet.speed),
