@@ -66,33 +66,25 @@ func main() {
 			}
 		}
 	})
-	m.Get("/api/v1/callsign/:callsign", func(params martini.Params) (int, []byte) {
-		records, err := db.GetRecordsForCallsign(params["callsign"], 1)
+	m.Get("/api/v1/callsign/:callsign", func(req *http.Request, params martini.Params) (int, []byte) {
+		var page int64 = 1
+		pageStr := req.URL.Query().Get("page")
+		if pageStr != "" {
+			var parseErr error
+			page, parseErr = strconv.ParseInt(pageStr, 10, 64)
+			if parseErr != nil {
+				page = 1
+			}
+		}
+
+		records, err := db.GetRecordsForCallsign(params["callsign"], page)
 		if err == nil {
 			body, _ := json.Marshal(records)
 			return http.StatusOK, body
 		} else {
-			log.Println("Unable to find callsign data")
+			log.Println("Unable to find callsign data", params["callsign"])
 			body, _ := json.Marshal("{}")
 			return http.StatusNotFound, body
-		}
-	})
-	m.Get("/api/v1/callsign/:callsign/:page", func(params martini.Params) (int, []byte) {
-		page, parseErr := strconv.ParseInt(params["page"], 10, 64)
-		if parseErr == nil {
-			records, err := db.GetRecordsForCallsign(params["callsign"], page)
-			if err == nil {
-				body, _ := json.Marshal(records)
-				return http.StatusOK, body
-			} else {
-				log.Println("Unable to find callsign data")
-				body, _ := json.Marshal("{}")
-				return http.StatusNotFound, body
-			}
-		} else {
-			log.Println("Unable to convert page number to int")
-			body, _ := json.Marshal("{}")
-			return http.StatusBadRequest, body
 		}
 	})
 	m.Run()
