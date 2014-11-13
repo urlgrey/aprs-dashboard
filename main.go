@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
 )
 
 type RawAprsPacket struct {
@@ -22,6 +23,7 @@ func main() {
 	}
 	redisPassword := os.Getenv("APRS_REDIS_PASSWORD")
 	redisDatabase := os.Getenv("APRS_REDIS_DATABASE")
+	apiTokens := strings.Split(os.Getenv("APRS_API_TOKENS"), ",")
 
 	db := NewDatabase(redisHost, redisPassword, redisDatabase)
 	defer db.Close()
@@ -30,6 +32,23 @@ func main() {
 	defer parser.Finish()
 
 	m := martini.Classic()
+
+	m.Use(func(res http.ResponseWriter, req *http.Request) {
+		if req.Method == "PUT" {
+			suppliedApiToken := req.Header.Get("X-API-KEY")
+			found := false
+			for _, token := range apiTokens {
+				if suppliedApiToken == token {
+					found = true
+					break
+				}
+			}
+			if !found {
+				res.WriteHeader(http.StatusUnauthorized)
+			}
+		}
+	})
+
 	m.Put("/api/v1/message", binding.Bind(RawAprsPacket{}), func(message RawAprsPacket) (int, []byte) {
 		aprsMessage, parseErr := parser.parseAprsPacket(message.Data, message.IsAX25)
 		if parseErr != nil {

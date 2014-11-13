@@ -57,6 +57,11 @@ make build
 
 Running APRS Dashboard
 =======================
+To limit access to the PUT API, set the `APRS_API_TOKENS` environment variable with a comma-separated list of API tokens:
+```shell
+export APRS_API_TOKENS="secret123"
+```
+
 ```shell
 APRS_REDIS_HOST=":6379"
 ./aprs-dashboard
@@ -75,6 +80,11 @@ $ ./aprs-dashboard
 Issue a CURL to the server to record data in the ```examples/sample_message.json``` file provided.
 ```shell
 $ curl -X PUT -H "Content-Type: application/json" http://127.0.0.1:3000/api/v1/message -d @examples/sample_message.json
+```
+
+If access is limited by API token (see "Running APRS Dashboard" section), then include an `X-API-KEY` header:
+```shell
+$ curl -X PUT -H "X-API-KEY: secret123" -H "Content-Type: application/json" http://127.0.0.1:3000/api/v1/message -d @examples/sample_message.json
 ```
 
 Observe output resembling the following in the APRS Dashboard console output:
