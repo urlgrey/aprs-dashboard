@@ -77,7 +77,7 @@ func (db *Database) Delete(key string) {
 	c.Do("DEL", key)
 }
 
-func (db *Database) RecordMessage(callsign string, message *AprsMessage) error {
+func (db *Database) RecordMessage(sourceCallsign string, message *AprsMessage) error {
 	jsonBytes, marshalErr := json.Marshal(message)
 	if marshalErr != nil {
 		log.Println("Error converting message to JSON", marshalErr)
@@ -87,14 +87,14 @@ func (db *Database) RecordMessage(callsign string, message *AprsMessage) error {
 		defer c.Close()
 
 		var err error
-		_, err = c.Do("HINCRBY", "callsigns.set", callsign, 1)
+		_, err = c.Do("HINCRBY", "callsigns.set", sourceCallsign, 1)
 		msgString := string(jsonBytes[:])
 		if err == nil {
-			_, err = c.Do("LPUSH", "callsign."+callsign, msgString)
+			_, err = c.Do("LPUSH", "callsign."+sourceCallsign, msgString)
 		}
 
 		if err == nil && message.IncludesPosition {
-			_, err = c.Do("geoadd", "positions", message.Latitude, message.Longitude, msgString)
+			_, err = c.Do("geoadd", "positions", message.Latitude, message.Longitude, sourceCallsign)
 		}
 		return err
 	}
