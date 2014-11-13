@@ -125,6 +125,11 @@ func (db *Database) NumberOfCallsigns() (int64, error) {
 	return r.(int64), err
 }
 
+func (db *Database) GetRecordsNearPosition(lat float64, long float64, time int64, radiusKM int64) {
+	c := db.redisPool.Get()
+	defer c.Close()
+}
+
 func (db *Database) GetRecordsForCallsign(callsign string, page int64) (PaginatedCallsignResults, error) {
 	var err error
 	totalNumberOfRecords, err := db.NumberOfMessagesForCallsign(callsign)
