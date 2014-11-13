@@ -156,8 +156,7 @@ func (db *Database) GetRecordsForCallsign(callsign string, page int64) (Paginate
 }
 
 func getFormattedTime(t time.Time) string {
-	utc, _ := time.LoadLocation("UTC")
-	utcTime := t.In(utc)
+	utcTime := t.UTC()
 	return fmt.Sprintf("%d.%02d.%02d.%02d",
 		utcTime.Year(), utcTime.Month(), utcTime.Day(),
 		utcTime.Hour())
