@@ -2,6 +2,7 @@ package main
 
 import (
 	"os"
+	"strconv"
 	"testing"
 	"time"
 )
@@ -57,10 +58,13 @@ func Test_RecordMessage(t *testing.T) {
 }
 
 func Test_getFormattedTime(t *testing.T) {
-	const longForm = "Jan 2, 2006 at 3:04pm (MST)"
-	timeVal, _ := time.Parse(longForm, "Feb 3, 2013 at 7:54pm (PST)")
-	timeStr := getFormattedTime(timeVal)
-	if timeStr != "2013.02.04.03" {
+	i, err := strconv.ParseInt("1405544146", 10, 64)
+	if err != nil {
+		t.Fatal(err)
+	}
+	tm := time.Unix(i, 0)
+	timeStr := getFormattedTime(tm)
+	if timeStr != "2014.07.16.20" {
 		t.Error("Formatted time string is incorrect:", timeStr)
 	}
 }
