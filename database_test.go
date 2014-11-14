@@ -26,7 +26,7 @@ func Test_RecordMessage(t *testing.T) {
 	var length int64
 
 	// verify item is not on list
-	length, err = db.NumberOfMessagesForCallsign("foo")
+	length, err = db.NumberOfMessagesForCallsign("KK6DCI")
 	if 0 != length {
 		t.Error("List length should be one", length)
 	}
@@ -38,24 +38,24 @@ func Test_RecordMessage(t *testing.T) {
 	}
 
 	// push item onto list
-	message := &AprsMessage{SourceCallsign: "foo"}
-	err = db.RecordMessage("foo", message)
+	message := &AprsMessage{SourceCallsign: "KK6DCI"}
+	err = db.RecordMessage("KK6DCI", message)
 	if err != nil {
 		t.Error("Error while LPUSHing", err)
 	}
 
 	// verify item is stored
 	var mostRecentMsg *AprsMessage
-	mostRecentMsg, err = db.GetMostRecentMessageForCallsign("foo")
+	mostRecentMsg, err = db.GetMostRecentMessageForCallsign("KK6DCI")
 	if err != nil {
 		t.Error("Error while getting most record message for callsign", err)
 	}
-	if mostRecentMsg.SourceCallsign != "foo" {
+	if mostRecentMsg.SourceCallsign != "KK6DCI" {
 		t.Error("Most recent message for callsign was invalid, missing callsign", mostRecentMsg.SourceCallsign)
 	}
 
 	// verify item is on list
-	length, err = db.NumberOfMessagesForCallsign("foo")
+	length, err = db.NumberOfMessagesForCallsign("KK6DCI")
 	if 1 != length {
 		t.Error("List length should be one", length)
 	}
@@ -87,14 +87,14 @@ func Test_GetMostRecentMessageForCallsign(t *testing.T) {
 
 	p := NewParser()
 	defer p.Finish()
-	msg, _ := p.parseAprsPacket("K7SSW>APRS,TCPXX*,qAX,CWOP-5:@100235z4743.22N/12222.41W_135/000g000t047r004p009P008h95b10132lOww_0.86.5", false)
+	msg, _ := p.parseAprsPacket("KK6DCI>APRS,TCPXX*,qAX,CWOP-5:@100235z4743.22N/12222.41W_135/000g000t047r004p009P008h95b10132lOww_0.86.5", false)
 	db.RecordMessage(msg.SourceCallsign, msg)
 
-	mostRecentMsg, err := db.GetMostRecentMessageForCallsign("K7SSW")
+	mostRecentMsg, err := db.GetMostRecentMessageForCallsign("KK6DCI")
 	if err != nil {
 		t.Error("Unexpected error")
 	}
-	if mostRecentMsg.SourceCallsign != "K7SSW" {
+	if mostRecentMsg.SourceCallsign != "KK6DCI" {
 		t.Error("Most recent message reported incomplete")
 	}
 }
@@ -122,7 +122,7 @@ func Benchmark_RecordMessage(b *testing.B) {
 
 	p := NewParser()
 	defer p.Finish()
-	msg, _ := p.parseAprsPacket("K7SSW>APRS,TCPXX*,qAX,CWOP-5:@100235z4743.22N/12222.41W_135/000g000t047r004p009P008h95b10132lOww_0.86.5", false)
+	msg, _ := p.parseAprsPacket("KK6DCI>APRS,TCPXX*,qAX,CWOP-5:@100235z4743.22N/12222.41W_135/000g000t047r004p009P008h95b10132lOww_0.86.5", false)
 
 	for i := 0; i < b.N; i++ {
 		db.RecordMessage(msg.SourceCallsign, msg)
@@ -136,16 +136,16 @@ func Benchmark_RetrieveMostRecentEntriesForCallsign(b *testing.B) {
 
 	p := NewParser()
 	defer p.Finish()
-	msg, _ := p.parseAprsPacket("K7SSW>APRS,TCPXX*,qAX,CWOP-5:@100235z4743.22N/12222.41W_135/000g000t047r004p009P008h95b10132lOww_0.86.5", false)
+	msg, _ := p.parseAprsPacket("KK6DCI>APRS,TCPXX*,qAX,CWOP-5:@100235z4743.22N/12222.41W_135/000g000t047r004p009P008h95b10132lOww_0.86.5", false)
 
 	var i int
 	for i = 0; i < 10000; i++ {
-		db.RecordMessage("foo", msg)
+		db.RecordMessage("KK6DCI", msg)
 	}
 
 	b.ResetTimer()
 	for i = 0; i < b.N; i++ {
-		db.GetRecordsForCallsign("foo", 1)
+		db.GetRecordsForCallsign("KK6DCI", 1)
 	}
 }
 
@@ -157,16 +157,16 @@ func Benchmark_RetrieveMiddleEntriesForCallsign(b *testing.B) {
 
 	p := NewParser()
 	defer p.Finish()
-	msg, _ := p.parseAprsPacket("K7SSW>APRS,TCPXX*,qAX,CWOP-5:@100235z4743.22N/12222.41W_135/000g000t047r004p009P008h95b10132lOww_0.86.5", false)
+	msg, _ := p.parseAprsPacket("KK6DCI>APRS,TCPXX*,qAX,CWOP-5:@100235z4743.22N/12222.41W_135/000g000t047r004p009P008h95b10132lOww_0.86.5", false)
 
 	var i int
 	for i = 0; i < 10000; i++ {
-		db.RecordMessage("foo", msg)
+		db.RecordMessage("KK6DCI", msg)
 	}
 
 	b.ResetTimer()
 	for i = 0; i < b.N; i++ {
-		db.GetRecordsForCallsign("foo", 500)
+		db.GetRecordsForCallsign("KK6DCI", 500)
 	}
 }
 
@@ -178,8 +178,8 @@ func Benchmark_GetFormattedTime(b *testing.B) {
 
 func cleanup(db *Database) {
 	db.Delete("callsigns.set")
-	db.Delete("callsign.foo")
+	db.Delete("callsign.KK6DCI")
 	db.Delete("positions")
 	db.Delete("positions." + getFormattedTime(time.Now()))
-	db.Delete("callsign.lastmessage.foo")
+	db.Delete("callsign.lastmessage.KK6DCI")
 }
