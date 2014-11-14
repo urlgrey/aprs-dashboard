@@ -6,11 +6,17 @@ import (
 	"fmt"
 	"github.com/garyburd/redigo/redis"
 	"log"
+	"strconv"
 	"time"
 )
 
 type Database struct {
 	redisPool *redis.Pool
+}
+
+type PositionResults struct {
+	Size    int64         `json:"size"`
+	Records []AprsMessage `json:"records"`
 }
 
 type PaginatedCallsignResults struct {
@@ -142,12 +148,21 @@ func (db *Database) NumberOfCallsigns() (int64, error) {
 	return r.(int64), err
 }
 
-func (db *Database) GetRecordsNearPosition(lat float64, long float64, time int64, radiusKM int64) {
+func (db *Database) GetRecordsNearPosition(lat float64, long float64, timeInterval int64, radiusKM int64) (*PositionResults, error) {
 	c := db.redisPool.Get()
 	defer c.Close()
+
+	currentSearchTime := time.Now().Truncate(time.Duration(1) * time.Hour)
+	numberOfSearches := int(timeInterval / 3600)
+	for i := 0; i < numberOfSearches; i++ {
+		redis.Strings(redis.Values(c.Do("georadius", "positions."+getFormattedTime(currentSearchTime), lat, long, strconv.FormatInt(radiusKM, 10)+" km")))
+		currentSearchTime = currentSearchTime.Add(time.Duration(1) * time.Hour)
+	}
+
+	return &PositionResults{}, nil
 }
 
-func (db *Database) GetRecordsForCallsign(callsign string, page int64) (PaginatedCallsignResults, error) {
+func (db *Database) GetRecordsForCallsign(callsign string, page int64) (*PaginatedCallsignResults, error) {
 	var err error
 	totalNumberOfRecords, err := db.NumberOfMessagesForCallsign(callsign)
 	if err == nil {
@@ -171,9 +186,9 @@ func (db *Database) GetRecordsForCallsign(callsign string, page int64) (Paginate
 			TotalNumberOfRecords: totalNumberOfRecords,
 			Records:              resultingMessages,
 		}
-		return results, nil
+		return &results, nil
 	} else {
-		return PaginatedCallsignResults{}, errors.New("Unable to get the number of records for the specified callsign")
+		return &PaginatedCallsignResults{}, errors.New("Unable to get the number of records for the specified callsign")
 	}
 }
 

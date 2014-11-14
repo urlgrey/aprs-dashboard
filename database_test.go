@@ -114,6 +114,28 @@ func Test_GetMostRecentMessageForUnrecognizedCallsign(t *testing.T) {
 	}
 }
 
+func Test_GetRecordsNearPosition(t *testing.T) {
+	db := NewDatabase(os.Getenv("APRS_REDIS_HOST"), "", "")
+	defer db.Close()
+	cleanup(db)
+	defer cleanup(db)
+
+	p := NewParser()
+	defer p.Finish()
+	for i := 1; i <= 10; i++ {
+		msg, _ := p.parseAprsPacket("KK6DCI-"+strconv.Itoa(i)+">APRS,TCPXX*,qAX,CWOP-5:@100235z4743.22N/12222.41W_135/000g000t047r004p009P008h95b10132lOww_0.86.5", false)
+		db.RecordMessage(msg.SourceCallsign, msg)
+	}
+
+	nearbyRecords, err := db.GetRecordsNearPosition(47.720333333333336, -122.3735, 3600, 30)
+	if err != nil {
+		t.Error("Unexpected error")
+	}
+	if nearbyRecords.Size != 0 {
+		t.Error("Size of response reported incorrectly", nearbyRecords.Size)
+	}
+}
+
 func Benchmark_RecordMessage(b *testing.B) {
 	db := NewDatabase(os.Getenv("APRS_REDIS_HOST"), "", "")
 	defer db.Close()
