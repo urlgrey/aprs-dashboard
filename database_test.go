@@ -38,10 +38,20 @@ func Test_RecordMessage(t *testing.T) {
 	}
 
 	// push item onto list
-	message := &AprsMessage{}
+	message := &AprsMessage{SourceCallsign: "foo"}
 	err = db.RecordMessage("foo", message)
 	if err != nil {
 		t.Error("Error while LPUSHing", err)
+	}
+
+	// verify item is stored
+	var mostRecentMsg *AprsMessage
+	mostRecentMsg, err = db.GetMostRecentMessageForCallsign("foo")
+	if err != nil {
+		t.Error("Error while getting most record message for callsign", err)
+	}
+	if mostRecentMsg.SourceCallsign != "foo" {
+		t.Error("Most recent message for callsign was invalid, missing callsign", mostRecentMsg.SourceCallsign)
 	}
 
 	// verify item is on list
@@ -66,6 +76,41 @@ func Test_getFormattedTime(t *testing.T) {
 	timeStr := getFormattedTime(tm)
 	if timeStr != "2014.07.16.20" {
 		t.Error("Formatted time string is incorrect:", timeStr)
+	}
+}
+
+func Test_GetMostRecentMessageForCallsign(t *testing.T) {
+	db := NewDatabase(os.Getenv("APRS_REDIS_HOST"), "", "")
+	defer db.Close()
+	cleanup(db)
+	defer cleanup(db)
+
+	p := NewParser()
+	defer p.Finish()
+	msg, _ := p.parseAprsPacket("K7SSW>APRS,TCPXX*,qAX,CWOP-5:@100235z4743.22N/12222.41W_135/000g000t047r004p009P008h95b10132lOww_0.86.5", false)
+	db.RecordMessage(msg.SourceCallsign, msg)
+
+	mostRecentMsg, err := db.GetMostRecentMessageForCallsign("K7SSW")
+	if err != nil {
+		t.Error("Unexpected error")
+	}
+	if mostRecentMsg.SourceCallsign != "K7SSW" {
+		t.Error("Most recent message reported incomplete")
+	}
+}
+
+func Test_GetMostRecentMessageForUnrecognizedCallsign(t *testing.T) {
+	db := NewDatabase(os.Getenv("APRS_REDIS_HOST"), "", "")
+	defer db.Close()
+	cleanup(db)
+	defer cleanup(db)
+
+	mostRecentMsg, err := db.GetMostRecentMessageForCallsign("FOADFBASDF")
+	if err == nil {
+		t.Error("Expected error but saw none")
+	}
+	if mostRecentMsg.SourceCallsign != "" {
+		t.Error("Most recent message reported incomplete")
 	}
 }
 
@@ -132,8 +177,9 @@ func Benchmark_GetFormattedTime(b *testing.B) {
 }
 
 func cleanup(db *Database) {
-	db.Delete("callsign.foo")
 	db.Delete("callsigns.set")
+	db.Delete("callsign.foo")
 	db.Delete("positions")
 	db.Delete("positions." + getFormattedTime(time.Now()))
+	db.Delete("callsign.lastmessage.foo")
 }

@@ -87,21 +87,38 @@ func (db *Database) RecordMessage(sourceCallsign string, message *AprsMessage) e
 		c := db.redisPool.Get()
 		defer c.Close()
 
-		var err error
-		_, err = c.Do("HINCRBY", "callsigns.set", sourceCallsign, 1)
 		msgString := string(jsonBytes[:])
-		if err == nil {
-			_, err = c.Do("LPUSH", "callsign."+sourceCallsign, msgString)
+		numberOfCommands := 3
+		c.Send("HINCRBY", "callsigns.set", sourceCallsign, 1)
+		c.Send("LPUSH", "callsign."+sourceCallsign, msgString)
+		c.Send("SET", "callsign.lastmessage."+sourceCallsign, msgString)
+		if message.IncludesPosition {
+			numberOfCommands = numberOfCommands + 2
+			c.Send("geoadd", "positions", message.Latitude, message.Longitude, sourceCallsign)
+			c.Send("geoadd", "positions."+getFormattedTime(time.Now()), message.Latitude, message.Longitude, sourceCallsign)
+		}
+		c.Flush()
+
+		var err error
+		for i := 0; i < numberOfCommands; i++ {
+			_, err = c.Receive()
 		}
 
-		if err == nil && message.IncludesPosition {
-			_, err = c.Do("geoadd", "positions", message.Latitude, message.Longitude, sourceCallsign)
-
-			if err == nil {
-				_, err = c.Do("geoadd", "positions."+getFormattedTime(time.Now()), message.Latitude, message.Longitude, sourceCallsign)
-			}
-		}
 		return err
+	}
+}
+
+func (db *Database) GetMostRecentMessageForCallsign(callsign string) (*AprsMessage, error) {
+	c := db.redisPool.Get()
+	defer c.Close()
+
+	msgBytes, err := redis.Bytes(c.Do("GET", "callsign.lastmessage."+callsign))
+	if err == nil {
+		var m AprsMessage
+		err = json.Unmarshal(msgBytes, &m)
+		return &m, err
+	} else {
+		return &AprsMessage{}, err
 	}
 }
 
