@@ -181,12 +181,14 @@ func (db *Database) GetRecordsNearPosition(lat float64, long float64, timeInterv
 
 		if err == nil {
 			for _, item := range reply {
-				var m AprsMessage
-				unmarshalErr := json.Unmarshal([]byte(item), &m)
-				if unmarshalErr == nil {
-					records = append(records, m)
-				} else {
-					log.Println("Unable to parse message, skipping")
+				if item != nil {
+					var m AprsMessage
+					unmarshalErr := json.Unmarshal([]byte(item), &m)
+					if unmarshalErr == nil {
+						records = append(records, m)
+					} else {
+						log.Println("Unable to parse message, skipping")
+					}
 				}
 			}
 			return &PositionResults{
