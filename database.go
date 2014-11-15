@@ -181,7 +181,7 @@ func (db *Database) GetRecordsNearPosition(lat float64, long float64, timeInterv
 
 		if err == nil {
 			for _, item := range reply {
-				if item != nil {
+				if item != "" {
 					var m AprsMessage
 					unmarshalErr := json.Unmarshal([]byte(item), &m)
 					if unmarshalErr == nil {
