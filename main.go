@@ -91,10 +91,15 @@ func main() {
 			body, _ := json.Marshal("{}")
 			return http.StatusBadRequest, body
 		} else {
-			db.GetRecordsNearPosition(lat, long, time, radiusKM)
+			records, err := db.GetRecordsNearPosition(lat, long, time, radiusKM)
 
-			body, _ := json.Marshal("{}")
-			return http.StatusOK, body
+			if err == nil {
+				body, _ := json.Marshal(records)
+				return http.StatusOK, body
+			} else {
+				body, _ := json.Marshal("{}")
+				return http.StatusInternalServerError, body
+			}
 		}
 	})
 	m.Run()
