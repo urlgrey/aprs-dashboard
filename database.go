@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"github.com/garyburd/redigo/redis"
 	"log"
-	"strconv"
 	"time"
 )
 
@@ -154,12 +153,40 @@ func (db *Database) GetRecordsNearPosition(lat float64, long float64, timeInterv
 
 	currentSearchTime := time.Now().Truncate(time.Duration(1) * time.Hour)
 	numberOfSearches := int(timeInterval / 3600)
+
+	callsigns := []string{}
 	for i := 0; i < numberOfSearches; i++ {
-		redis.Strings(redis.Values(c.Do("georadius", "positions."+getFormattedTime(currentSearchTime), lat, long, strconv.FormatInt(radiusKM, 10)+" km")))
+		key := "positions." + getFormattedTime(currentSearchTime)
+		values, err := redis.Strings(redis.Values(c.Do("georadius", key, lat, long, radiusKM, "km")))
 		currentSearchTime = currentSearchTime.Add(time.Duration(1) * time.Hour)
+		if err == nil {
+			callsigns = append(callsigns, values...)
+			break
+		}
 	}
 
-	return &PositionResults{}, nil
+	if len(callsigns) > 0 {
+		// find the unique callsigns in the hourly search results
+		uniqueCallsigns := []string{}
+		seen := map[string]string{}
+		records := []AprsMessage{}
+		for _, val := range callsigns {
+			if _, ok := seen[val]; !ok {
+				seen[val] = val
+				uniqueCallsigns = append(uniqueCallsigns, "callsign.lastmessage."+val)
+				// srsly, fix this
+				msg, msgErr := db.GetMostRecentMessageForCallsign(val)
+				if msgErr == nil {
+					records = append(records, *msg)
+				}
+			}
+		}
+		return &PositionResults{
+			Size:    int64(len(records)),
+			Records: records,
+		}, nil
+	}
+	return &PositionResults{Size: 0, Records: []AprsMessage{}}, nil
 }
 
 func (db *Database) GetRecordsForCallsign(callsign string, page int64) (*PaginatedCallsignResults, error) {
@@ -169,8 +196,8 @@ func (db *Database) GetRecordsForCallsign(callsign string, page int64) (*Paginat
 		numberOfPages := (totalNumberOfRecords / 10) + 1
 		startingRecord := (page - 1) * 10
 		endingRecord := (page * 10) - 1
-		resultingMessages := []AprsMessage{}
 		messages, _ := db.PaginatedMessagesForCallsign(callsign, startingRecord, endingRecord)
+		resultingMessages := []AprsMessage{}
 		for _, message := range messages {
 			var m AprsMessage
 			unmarshalErr := json.Unmarshal([]byte(message), &m)
