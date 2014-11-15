@@ -174,17 +174,26 @@ func (db *Database) GetRecordsNearPosition(lat float64, long float64, timeInterv
 			if _, ok := seen[val]; !ok {
 				seen[val] = val
 				uniqueCallsigns = append(uniqueCallsigns, "callsign.lastmessage."+val)
-				// srsly, fix this
-				msg, msgErr := db.GetMostRecentMessageForCallsign(val)
-				if msgErr == nil {
-					records = append(records, *msg)
-				}
 			}
 		}
-		return &PositionResults{
-			Size:    int64(len(records)),
-			Records: records,
-		}, nil
+
+		reply, err := redis.Strings(redis.Values(c.Do("MGET", redis.Args{}.AddFlat(uniqueCallsigns)...)))
+
+		if err == nil {
+			for _, item := range reply {
+				var m AprsMessage
+				unmarshalErr := json.Unmarshal([]byte(item), &m)
+				if unmarshalErr == nil {
+					records = append(records, m)
+				} else {
+					log.Println("Unable to parse message, skipping")
+				}
+			}
+			return &PositionResults{
+				Size:    int64(len(records)),
+				Records: records,
+			}, nil
+		}
 	}
 	return &PositionResults{Size: 0, Records: []AprsMessage{}}, nil
 }
