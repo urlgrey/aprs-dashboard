@@ -25,6 +25,8 @@ type PaginatedCallsignResults struct {
 	Records              []AprsMessage `json:"records"`
 }
 
+const maxCallsignRecordsToKeep = 999
+
 func NewDatabase(server string, password string, database string) *Database {
 	db := Database{}
 	db.redisPool = &redis.Pool{
@@ -96,6 +98,7 @@ func (db *Database) RecordMessage(sourceCallsign string, message *AprsMessage) e
 		numberOfCommands := 3
 		c.Send("HINCRBY", "callsigns.set", sourceCallsign, 1)
 		c.Send("LPUSH", "callsign."+sourceCallsign, msgString)
+		c.Send("LTRIM", "callsign."+sourceCallsign, 0, maxCallsignRecordsToKeep)
 		c.Send("SET", "callsign.lastmessage."+sourceCallsign, msgString)
 		if message.IncludesPosition {
 			numberOfCommands = numberOfCommands + 2
@@ -158,7 +161,7 @@ func (db *Database) GetRecordsNearPosition(lat float64, long float64, timeInterv
 	for i := 0; i < numberOfSearches; i++ {
 		key := "positions." + getFormattedTime(currentSearchTime)
 		values, err := redis.Strings(redis.Values(c.Do("georadius", key, lat, long, radiusKM, "km")))
-		currentSearchTime = currentSearchTime.Add(time.Duration(1) * time.Hour)
+		currentSearchTime = currentSearchTime.Add(time.Duration(-1) * time.Hour)
 		if err == nil {
 			callsigns = append(callsigns, values...)
 			break
@@ -205,7 +208,7 @@ func (db *Database) GetRecordsForCallsign(callsign string, page int64) (*Paginat
 	totalNumberOfRecords, err := db.NumberOfMessagesForCallsign(callsign)
 	if err == nil {
 		numberOfPages := (totalNumberOfRecords / 10) + 1
-		startingRecord := (page - 1) * 10
+		startingRecord := ((page - 1) * 10) - 1
 		endingRecord := (page * 10) - 1
 		messages, _ := db.PaginatedMessagesForCallsign(callsign, startingRecord, endingRecord)
 		resultingMessages := []AprsMessage{}
