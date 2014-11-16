@@ -208,7 +208,7 @@ func (db *Database) GetRecordsForCallsign(callsign string, page int64) (*Paginat
 	totalNumberOfRecords, err := db.NumberOfMessagesForCallsign(callsign)
 	if err == nil {
 		numberOfPages := (totalNumberOfRecords / 10) + 1
-		startingRecord := ((page - 1) * 10) - 1
+		startingRecord := ((page - 1) * 10)
 		endingRecord := (page * 10) - 1
 		messages, _ := db.PaginatedMessagesForCallsign(callsign, startingRecord, endingRecord)
 		resultingMessages := []AprsMessage{}
