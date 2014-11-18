@@ -23,3 +23,5 @@ deployment:
     commands:
       - tar -czf aprs-dashboard-x86_64-${CIRCLE_SHA1}.tar.gz aprs-dashboard
       - aws s3 cp aprs-dashboard-x86_64-${CIRCLE_SHA1}.tar.gz s3://aprs-dashboard-builds/${CIRCLE_BRANCH}/aprs-dashboard-x86_64-${CIRCLE_SHA1}.tar.gz
+      - tar -czf aprs-dashboard-assets-${CIRCLE_SHA1}.tar.gz assets
+      - aws s3 cp aprs-dashboard-assets-${CIRCLE_SHA1}.tar.gz s3://aprs-dashboard-builds/${CIRCLE_BRANCH}/aprs-dashboard-assets-${CIRCLE_SHA1}.tar.gz
