@@ -50,6 +50,8 @@ func main() {
 		}
 	})
 
+	m.Use(martini.Static("assets")) // serve from the "assets" directory as well
+
 	m.Put("/api/v1/message", binding.Bind(RawAprsPacket{}), func(message RawAprsPacket) (int, []byte) {
 		aprsMessage, parseErr := parser.parseAprsPacket(message.Data, message.IsAX25)
 		if parseErr != nil {

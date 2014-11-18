@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <style type="text/css">
+      html, body, #map-canvas { height: 100%; margin: 0; padding: 0;}
+    </style>
+    <script type="text/javascript" src="/jquery-2.1.1.js"></script>
+    <script type="text/javascript"
+      src="https://maps.googleapis.com/maps/api/js?sensor=false">
+    </script>
+    <script type="text/javascript">
+      function initialize() {
+        var mapOptions = {
+          center: { lat: -34.397, lng: 150.644},
+          zoom: 8
+        };
+        var map = new google.maps.Map(document.getElementById('map-canvas'),
+            mapOptions);
+
+        // Try HTML5 Geolocation
+        if(navigator.geolocation) {
+          navigator.geolocation.getCurrentPosition(function(position) {
+            centerMap(map, position.coords.latitude, position.coords.longitude);
+          }, function() {
+            centerMap(map, "38.0633", "-122.1561");
+          });
+        } else {
+          centerMap(map, "38.0633", "-122.1561");
+        }
+      }
+      google.maps.event.addDomListener(window, 'load', initialize);
+
+      function centerMap(map, latitude, longitude) {
+        var pos = new google.maps.LatLng(latitude, longitude);
+        map.setCenter(pos);
+        $.ajax({
+          type: "GET",
+          url: "/api/v1/position?lat=" + latitude + "&long=" + longitude + "&radius=200&time=3600",  
+          dataType: "json",  
+          success: function(resp){
+            // we have the response  
+            var arrayLength = resp.records.length;
+            for (var i = 0; i < arrayLength; i++) {
+              var entry = resp.records[i];
+              var myLatLng = new google.maps.LatLng(entry.latitude, entry.longitude);
+              var marker = new google.maps.Marker({
+                position: myLatLng,
+                map: map,
+                title: entry.src_callsign
+              });
+            }
+          },  
+          error: function(e){  
+            alert('Error retrieving callsigns: ' + e);  
+          }  
+        });
+      }
+    </script>
+  </head>
+  <body>
+<div id="map-canvas"></div>
+  </body>
+</html>
