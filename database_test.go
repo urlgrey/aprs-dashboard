@@ -217,12 +217,12 @@ func Benchmark_GetRecordsNearPosition(b *testing.B) {
 }
 
 func cleanup(db *Database) {
-	db.Delete("callsigns.set")
-	db.Delete("callsign.KK6DCI")
+	db.Delete("callsigns:set")
+	db.Delete("callsign:KK6DCI")
 	db.Delete("positions")
-	db.Delete("positions." + getFormattedTime(time.Now()))
-	db.Delete("callsign.lastmessage.KK6DCI")
+	db.Delete("positions:" + getFormattedTime(time.Now()))
+	db.Delete("callsign:lastmessage:KK6DCI")
 	for i := 1; i <= 10; i++ {
-		db.Delete("callsign.lastmessage.KK6DCI-" + strconv.Itoa(i))
+		db.Delete("callsign:lastmessage:KK6DCI-" + strconv.Itoa(i))
 	}
 }

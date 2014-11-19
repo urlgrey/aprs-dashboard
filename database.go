@@ -96,14 +96,14 @@ func (db *Database) RecordMessage(sourceCallsign string, message *AprsMessage) e
 
 		msgString := string(jsonBytes[:])
 		numberOfCommands := 3
-		c.Send("HINCRBY", "callsigns.set", sourceCallsign, 1)
-		c.Send("LPUSH", "callsign."+sourceCallsign, msgString)
-		c.Send("LTRIM", "callsign."+sourceCallsign, 0, maxCallsignRecordsToKeep)
-		c.Send("SET", "callsign.lastmessage."+sourceCallsign, msgString)
+		c.Send("SADD", "callsigns:set", sourceCallsign)
+		c.Send("LPUSH", "callsign:"+sourceCallsign, msgString)
+		c.Send("LTRIM", "callsign:"+sourceCallsign, 0, maxCallsignRecordsToKeep)
+		c.Send("SET", "callsign:lastmessage:"+sourceCallsign, msgString)
 		if message.IncludesPosition {
 			numberOfCommands = numberOfCommands + 2
 			c.Send("geoadd", "positions", message.Latitude, message.Longitude, sourceCallsign)
-			c.Send("geoadd", "positions."+getFormattedTime(time.Now()), message.Latitude, message.Longitude, sourceCallsign)
+			c.Send("geoadd", "positions:"+getFormattedTime(time.Now()), message.Latitude, message.Longitude, sourceCallsign)
 		}
 		c.Flush()
 
@@ -120,7 +120,7 @@ func (db *Database) GetMostRecentMessageForCallsign(callsign string) (*AprsMessa
 	c := db.redisPool.Get()
 	defer c.Close()
 
-	msgBytes, err := redis.Bytes(c.Do("GET", "callsign.lastmessage."+callsign))
+	msgBytes, err := redis.Bytes(c.Do("GET", "callsign:lastmessage:"+callsign))
 	if err == nil {
 		var m AprsMessage
 		err = json.Unmarshal(msgBytes, &m)
@@ -133,20 +133,20 @@ func (db *Database) GetMostRecentMessageForCallsign(callsign string) (*AprsMessa
 func (db *Database) NumberOfMessagesForCallsign(callsign string) (int64, error) {
 	c := db.redisPool.Get()
 	defer c.Close()
-	r, err := c.Do("LLEN", "callsign."+callsign)
+	r, err := c.Do("LLEN", "callsign:"+callsign)
 	return r.(int64), err
 }
 
 func (db *Database) PaginatedMessagesForCallsign(callsign string, start int64, stop int64) ([]string, error) {
 	c := db.redisPool.Get()
 	defer c.Close()
-	return redis.Strings(redis.Values(c.Do("LRANGE", "callsign."+callsign, start, stop)))
+	return redis.Strings(redis.Values(c.Do("LRANGE", "callsign:"+callsign, start, stop)))
 }
 
 func (db *Database) NumberOfCallsigns() (int64, error) {
 	c := db.redisPool.Get()
 	defer c.Close()
-	r, err := c.Do("HLEN", "callsigns.set")
+	r, err := c.Do("SCARD", "callsigns:set")
 	return r.(int64), err
 }
 
@@ -159,7 +159,7 @@ func (db *Database) GetRecordsNearPosition(lat float64, long float64, timeInterv
 
 	callsigns := []string{}
 	for i := 0; i < numberOfSearches; i++ {
-		key := "positions." + getFormattedTime(currentSearchTime)
+		key := "positions:" + getFormattedTime(currentSearchTime)
 		values, err := redis.Strings(redis.Values(c.Do("georadius", key, lat, long, radiusKM, "km")))
 		currentSearchTime = currentSearchTime.Add(time.Duration(-1) * time.Hour)
 		if err == nil {
@@ -176,7 +176,7 @@ func (db *Database) GetRecordsNearPosition(lat float64, long float64, timeInterv
 		for _, val := range callsigns {
 			if _, ok := seen[val]; !ok {
 				seen[val] = val
-				uniqueCallsigns = append(uniqueCallsigns, "callsign.lastmessage."+val)
+				uniqueCallsigns = append(uniqueCallsigns, "callsign:lastmessage:"+val)
 			}
 		}
 
