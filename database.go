@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/garyburd/redigo/redis"
+	gset "github.com/urlgrey/golang-set"
 	"log"
 	"time"
 )
@@ -96,14 +97,20 @@ func (db *Database) RecordMessage(sourceCallsign string, message *AprsMessage) e
 
 		msgString := string(jsonBytes[:])
 		numberOfCommands := 3
-		c.Send("SADD", "callsigns:set", sourceCallsign)
-		c.Send("LPUSH", "callsign:"+sourceCallsign, msgString)
-		c.Send("LTRIM", "callsign:"+sourceCallsign, 0, maxCallsignRecordsToKeep)
-		c.Send("SET", "callsign:lastmessage:"+sourceCallsign, msgString)
+
+		// add to global set of callsigns
+		c.Send("SADD", "aprs:calls", sourceCallsign)
+
+		// limit the number of messages retained for the callsign
+		c.Send("LPUSH", "aprs:all:"+sourceCallsign, msgString)
+		c.Send("LTRIM", "aprs:all:"+sourceCallsign, 0, maxCallsignRecordsToKeep)
+
+		// store the last-received message for the callsign
+		c.Send("HSET", "aprs:last", sourceCallsign, msgString)
+		c.Send("ZADD", "aprs:timeline", time.Now().Unix(), sourceCallsign)
 		if message.IncludesPosition {
 			numberOfCommands = numberOfCommands + 2
-			c.Send("geoadd", "positions", message.Latitude, message.Longitude, sourceCallsign)
-			c.Send("geoadd", "positions:"+getFormattedTime(time.Now()), message.Latitude, message.Longitude, sourceCallsign)
+			c.Send("geoadd", "aprs:pos", message.Latitude, message.Longitude, sourceCallsign)
 		}
 		c.Flush()
 
@@ -120,7 +127,7 @@ func (db *Database) GetMostRecentMessageForCallsign(callsign string) (*AprsMessa
 	c := db.redisPool.Get()
 	defer c.Close()
 
-	msgBytes, err := redis.Bytes(c.Do("GET", "callsign:lastmessage:"+callsign))
+	msgBytes, err := redis.Bytes(c.Do("HGET", "aprs:last", callsign))
 	if err == nil {
 		var m AprsMessage
 		err = json.Unmarshal(msgBytes, &m)
@@ -133,20 +140,20 @@ func (db *Database) GetMostRecentMessageForCallsign(callsign string) (*AprsMessa
 func (db *Database) NumberOfMessagesForCallsign(callsign string) (int64, error) {
 	c := db.redisPool.Get()
 	defer c.Close()
-	r, err := c.Do("LLEN", "callsign:"+callsign)
+	r, err := c.Do("LLEN", "aprs:all:"+callsign)
 	return r.(int64), err
 }
 
 func (db *Database) PaginatedMessagesForCallsign(callsign string, start int64, stop int64) ([]string, error) {
 	c := db.redisPool.Get()
 	defer c.Close()
-	return redis.Strings(redis.Values(c.Do("LRANGE", "callsign:"+callsign, start, stop)))
+	return redis.Strings(redis.Values(c.Do("LRANGE", "aprs:all:"+callsign, start, stop)))
 }
 
 func (db *Database) NumberOfCallsigns() (int64, error) {
 	c := db.redisPool.Get()
 	defer c.Close()
-	r, err := c.Do("SCARD", "callsigns:set")
+	r, err := c.Do("SCARD", "aprs:calls")
 	return r.(int64), err
 }
 
@@ -154,34 +161,24 @@ func (db *Database) GetRecordsNearPosition(lat float64, long float64, timeInterv
 	c := db.redisPool.Get()
 	defer c.Close()
 
-	currentSearchTime := time.Now().Truncate(time.Duration(1) * time.Hour)
-	numberOfSearches := int(timeInterval / 3600)
+	searchTimeLowEnd := time.Now().Add(time.Duration(-1*timeInterval) * time.Second).Unix()
+	searchTimeHighEnd := time.Now().Unix()
+	var err error
+	callsignsNearPos := []string{}
 
-	callsigns := []string{}
-	for i := 0; i < numberOfSearches; i++ {
-		key := "positions:" + getFormattedTime(currentSearchTime)
-		values, err := redis.Strings(redis.Values(c.Do("georadius", key, lat, long, radiusKM, "km")))
-		currentSearchTime = currentSearchTime.Add(time.Duration(-1) * time.Hour)
-		if err == nil {
-			callsigns = append(callsigns, values...)
-			break
-		}
-	}
+	// look for intersection between callsign in an area and callsigns with a
+	// message received since the low-end of the search window time period
+	callsignsNearPos, err = redis.Strings(redis.Values(c.Do("georadius", "aprs:pos", lat, long, radiusKM, "km")))
 
-	if len(callsigns) > 0 {
-		// find the unique callsigns in the hourly search results
-		uniqueCallsigns := []string{}
-		seen := map[string]string{}
+	if err == nil && len(callsignsNearPos) > 0 {
+		callsignsInTimeInterval := []string{}
+		callsignsInTimeInterval, err = redis.Strings(redis.Values(c.Do("ZRANGEBYSCORE", "aprs:timeline", searchTimeLowEnd, searchTimeHighEnd)))
+
+		// find the intersection between nearby and recent callsign messages
+		recentNearbyCallsigns := makeSet(callsignsNearPos).Intersect(makeSet(callsignsInTimeInterval)).ToSlice()
+		reply, err := redis.Strings(redis.Values(c.Do("HMGET", redis.Args{}.Add("aprs:last").AddFlat(recentNearbyCallsigns)...)))
+
 		records := []AprsMessage{}
-		for _, val := range callsigns {
-			if _, ok := seen[val]; !ok {
-				seen[val] = val
-				uniqueCallsigns = append(uniqueCallsigns, "callsign:lastmessage:"+val)
-			}
-		}
-
-		reply, err := redis.Strings(redis.Values(c.Do("MGET", redis.Args{}.AddFlat(uniqueCallsigns)...)))
-
 		if err == nil {
 			for _, item := range reply {
 				if item != "" {
@@ -200,7 +197,7 @@ func (db *Database) GetRecordsNearPosition(lat float64, long float64, timeInterv
 			}, nil
 		}
 	}
-	return &PositionResults{Size: 0, Records: []AprsMessage{}}, nil
+	return &PositionResults{Size: 0, Records: []AprsMessage{}}, err
 }
 
 func (db *Database) GetRecordsForCallsign(callsign string, page int64) (*PaginatedCallsignResults, error) {
@@ -238,4 +235,12 @@ func getFormattedTime(t time.Time) string {
 	return fmt.Sprintf("%d.%02d.%02d.%02d",
 		utcTime.Year(), utcTime.Month(), utcTime.Day(),
 		utcTime.Hour())
+}
+
+func makeSet(strs []string) gset.Set {
+	set := gset.NewThreadUnsafeSet()
+	for _, i := range strs {
+		set.Add(i)
+	}
+	return set
 }

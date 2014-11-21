@@ -129,7 +129,7 @@ func Test_GetRecordsNearPosition(t *testing.T) {
 
 	nearbyRecords, err := db.GetRecordsNearPosition(47.720333333333336, -122.3735, 3600, 30)
 	if err != nil {
-		t.Error("Unexpected error")
+		t.Error("Unexpected error", err)
 	}
 	if nearbyRecords.Size != 10 {
 		t.Error("Size of response reported incorrectly", nearbyRecords.Size)
@@ -217,12 +217,12 @@ func Benchmark_GetRecordsNearPosition(b *testing.B) {
 }
 
 func cleanup(db *Database) {
-	db.Delete("callsigns:set")
-	db.Delete("callsign:KK6DCI")
-	db.Delete("positions")
-	db.Delete("positions:" + getFormattedTime(time.Now()))
-	db.Delete("callsign:lastmessage:KK6DCI")
+	db.Delete("aprs:calls")
+	db.Delete("aprs:last:KK6DCI")
+	db.Delete("aprs:pos")
+	db.Delete("aprs:all:KK6DCI")
 	for i := 1; i <= 10; i++ {
-		db.Delete("callsign:lastmessage:KK6DCI-" + strconv.Itoa(i))
+		db.Delete("aprs:last:KK6DCI-" + strconv.Itoa(i))
+		db.Delete("aprs:all:KK6DCI-" + strconv.Itoa(i))
 	}
 }
