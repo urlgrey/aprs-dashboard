@@ -1,13 +1,17 @@
 <!DOCTYPE html>
 <html>
   <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
     <style type="text/css">
       html, body, #map-canvas { height: 100%; margin: 0; padding: 0;}
     </style>
-    <script type="text/javascript" src="/jquery-2.1.1.js"></script>
-    <script type="text/javascript"
-      src="https://maps.googleapis.com/maps/api/js?sensor=false">
-    </script>
+    <link rel="stylesheet" href="css/bootstrap.min.css">
+    <link rel="stylesheet" href="css/bootstrap-theme.min.css">
+    <link rel="stylesheet" href="css/aprs-dashboard.css">
+    <script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?sensor=false"></script>
     <script type="text/javascript">
 
 function initialize() {
@@ -15,8 +19,8 @@ function initialize() {
         center: { lat: -34.397, lng: 150.644},
         zoom: 8
     };
-    var map = new google.maps.Map(document.getElementById('map-canvas'),
-				  mapOptions);
+    var map = new google.maps.Map(document.getElementById('map-container'),
+          mapOptions);
     
     // Try HTML5 Geolocation
     var defaultPos = new google.maps.LatLng(-34.397, 150.644);
@@ -25,10 +29,10 @@ function initialize() {
         navigator.geolocation.getCurrentPosition(function(position) {
             var pos = new google.maps.LatLng(position.coords.latitude, position.coords.longitude)
             map.setCenter(pos);
-	    centerMap(map, pos);
+      centerMap(map, pos);
         }, function() {
             map.setCenter(defaultPos);
-	    centerMap(map, defaultPos);
+      centerMap(map, defaultPos);
         });
     } else {
         map.setCenter(defaultPos);
@@ -43,7 +47,7 @@ function initialize() {
 function centerMap(map, pos) {
     $.ajax({
         type: "GET",
-        url: "/api/v1/position?lat=" + pos.lat() + "&long=" + pos.lng() + "&radius=200&time=3600",  
+        url: "/api/v1/position?lat=" + pos.lat() + "&long=" + pos.lng() + "&radius=200&time=43200",  
         dataType: "json",  
         success: function(resp){
             handleSearchResponse(map, resp);
@@ -57,13 +61,12 @@ function centerMap(map, pos) {
 function handleSearchResponse(map, resp) {
     var arrayLength = resp.records.length;
     for (var i = 0; i < arrayLength; i++) {
-	var entry = resp.records[i];
-	var myLatLng = new google.maps.LatLng(entry.latitude, entry.longitude);
-	var marker = new google.maps.Marker({
-	    position: myLatLng,
-	    map: map,
-	    title: entry.src_callsign
-	});
+      var entry = resp.records[i];
+      var myLatLng = new google.maps.LatLng(entry.latitude, entry.longitude);
+      var marker = new google.maps.Marker({
+          position: myLatLng,
+          map: map,
+          title: entry.src_callsign});
     }
 }
 
@@ -72,6 +75,59 @@ google.maps.event.addDomListener(window, 'load', initialize);
     </script>
   </head>
   <body>
-<div id="map-canvas"></div>
+    <div class="container">
+
+      <!-- Static navbar -->
+      <div class="navbar navbar-default" role="navigation">
+        <div class="container-fluid">
+          <div class="navbar-header">
+            <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+              <span class="sr-only">Toggle navigation</span>
+              <span class="icon-bar"></span>
+              <span class="icon-bar"></span>
+              <span class="icon-bar"></span>
+            </button>
+            <a class="navbar-brand" href="#">APRS Dashboard</a>
+          </div>
+          <div class="navbar-collapse collapse">
+            <ul class="nav navbar-nav">
+              <li class="active"><a href="#">Link</a></li>
+              <li><a href="#">Link</a></li>
+              <li><a href="#">Link</a></li>
+              <li class="dropdown">
+                <a href="#" class="dropdown-toggle" data-toggle="dropdown">Dropdown <b class="caret"></b></a>
+                <ul class="dropdown-menu">
+                  <li><a href="#">Action</a></li>
+                  <li><a href="#">Another action</a></li>
+                  <li><a href="#">Something else here</a></li>
+                  <li class="divider"></li>
+                  <li class="dropdown-header">Nav header</li>
+                  <li><a href="#">Separated link</a></li>
+                  <li><a href="#">One more separated link</a></li>
+                </ul>
+              </li>
+            </ul>
+            <ul class="nav navbar-nav navbar-right">
+              <li class="active"><a href="./">Default</a></li>
+              <li><a href="../navbar-static-top/">Static top</a></li>
+              <li><a href="../navbar-fixed-top/">Fixed top</a></li>
+            </ul>
+          </div><!--/.nav-collapse -->
+        </div><!--/.container-fluid -->
+      </div>
+
+      <div class="row">
+        <div id="map-container" class="col-md-9"></div>
+        <div class="col-md-3">Search Settings</div>
+      </div>
+
+    </div> <!-- /container -->
+
+
+    <!-- Bootstrap core JavaScript
+    ================================================== -->
+    <!-- Placed at the end of the document so the pages load faster -->
+    <script type="text/javascript" src="js/jquery-2.1.1.js"></script>
+    <script src="js/bootstrap.min.js"></script>
   </body>
 </html>
