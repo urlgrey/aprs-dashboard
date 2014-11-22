@@ -19,31 +19,34 @@ function initialize() {
 				  mapOptions);
     
     // Try HTML5 Geolocation
-    var defaultPos = new google.maps.LatLng(latitude, longitude);
+    var defaultPos = new google.maps.LatLng(-34.397, 150.644);
 
     if(navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(function(position) {
-	    centerMap(map, position.coords);
+            var pos = new google.maps.LatLng(position.coords.latitude, position.coords.longitude)
+            map.setCenter(pos);
+	    centerMap(map, pos);
         }, function() {
+            map.setCenter(defaultPos);
 	    centerMap(map, defaultPos);
         });
     } else {
+        map.setCenter(defaultPos);
         centerMap(map, defaultPos);
     }
 
     google.maps.event.addListener(map, 'center_changed', function(event) {
-        centerMap(map, event.latLng);
+        centerMap(map, map.getCenter());
     });
 }
 
 function centerMap(map, pos) {
-    map.setCenter(pos);
     $.ajax({
         type: "GET",
-        url: "/api/v1/position?lat=" + latitude + "&long=" + longitude + "&radius=200&time=3600",  
+        url: "/api/v1/position?lat=" + pos.lat() + "&long=" + pos.lng() + "&radius=200&time=3600",  
         dataType: "json",  
         success: function(resp){
-            handleSearchResponse(resp);
+            handleSearchResponse(map, resp);
         },  
         error: function(e){  
             alert('Error retrieving callsigns: ' + e);  
@@ -51,7 +54,7 @@ function centerMap(map, pos) {
     });
 }
 
-function handleSearchResponse(resp) {
+function handleSearchResponse(map, resp) {
     var arrayLength = resp.records.length;
     for (var i = 0; i < arrayLength; i++) {
 	var entry = resp.records[i];
