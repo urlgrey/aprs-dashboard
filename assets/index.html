@@ -13,61 +13,75 @@
     <link rel="stylesheet" href="css/aprs-dashboard.css">
     <script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?sensor=false"></script>
     <script type="text/javascript">
+var markers = [];
+var map;
 
 function initialize() {
-    var mapOptions = {
-        center: { lat: -34.397, lng: 150.644},
-        zoom: 8
-    };
-    var map = new google.maps.Map(document.getElementById('map-container'),
-          mapOptions);
-    
-    // Try HTML5 Geolocation
-    var defaultPos = new google.maps.LatLng(-34.397, 150.644);
+  var mapOptions = {
+      center: { lat: -34.397, lng: 150.644},
+      zoom: 8
+  };
+  map = new google.maps.Map(document.getElementById('map-container'),
+        mapOptions);
+  
+  // Try HTML5 Geolocation
+  var defaultPos = new google.maps.LatLng(-34.397, 150.644);
 
-    if(navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(function(position) {
-            var pos = new google.maps.LatLng(position.coords.latitude, position.coords.longitude)
-            map.setCenter(pos);
-      centerMap(map, pos);
-        }, function() {
-            map.setCenter(defaultPos);
-      centerMap(map, defaultPos);
-        });
-    } else {
-        map.setCenter(defaultPos);
-        centerMap(map, defaultPos);
-    }
+  if(navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(function(position) {
+          var pos = new google.maps.LatLng(position.coords.latitude, position.coords.longitude)
+          map.setCenter(pos);
+    centerMap(pos);
+      }, function() {
+          map.setCenter(defaultPos);
+    centerMap(map, defaultPos);
+      });
+  } else {
+      map.setCenter(defaultPos);
+      centerMap(defaultPos);
+  }
 
-    google.maps.event.addListener(map, 'center_changed', function(event) {
-        centerMap(map, map.getCenter());
-    });
+  google.maps.event.addListener(map, 'dragend', function(event) {
+    centerMap(map.getCenter());
+  });
 }
 
-function centerMap(map, pos) {
-    $.ajax({
-        type: "GET",
-        url: "/api/v1/position?lat=" + pos.lat() + "&long=" + pos.lng() + "&radius=200&time=43200",  
-        dataType: "json",  
-        success: function(resp){
-            handleSearchResponse(map, resp);
-        },  
-        error: function(e){  
-            alert('Error retrieving callsigns: ' + e);  
-        }  
-    });
+function centerMap(pos) {
+  var searchRadius = $("#searchRadius").val();
+
+  $.ajax({
+      type: "GET",
+      url: "/api/v1/position?lat=" + pos.lat() + "&long=" + pos.lng() + "&radius=100&time=" + $("#timeWindow").val(),
+      dataType: "json",
+      success: function(resp){
+          handleSearchResponse(resp);
+      },  
+      error: function(e){  
+          alert('Error retrieving callsigns: ' + e);  
+      }  
+  });
 }
 
-function handleSearchResponse(map, resp) {
-    var arrayLength = resp.records.length;
-    for (var i = 0; i < arrayLength; i++) {
-      var entry = resp.records[i];
-      var myLatLng = new google.maps.LatLng(entry.latitude, entry.longitude);
-      var marker = new google.maps.Marker({
-          position: myLatLng,
-          map: map,
-          title: entry.src_callsign});
-    }
+function handleSearchResponse(resp) {
+  clearMarkers();
+  var arrayLength = resp.records.length;
+  for (var i = 0; i < arrayLength; i++) {
+    var entry = resp.records[i];
+    var myLatLng = new google.maps.LatLng(entry.latitude, entry.longitude);
+    var marker = new google.maps.Marker({
+        position: myLatLng,
+        map: map,
+        title: entry.src_callsign});
+    markers.push(marker);
+  }
+}
+
+// Removes the markers from the map, but keeps them in the array.
+function clearMarkers() {
+  for (var i = 0; i < markers.length; i++) {
+    markers[i].setMap(null);
+  }
+  markers = [];
 }
 
 google.maps.event.addDomListener(window, 'load', initialize);
@@ -118,7 +132,20 @@ google.maps.event.addDomListener(window, 'load', initialize);
 
       <div class="row">
         <div id="map-container" class="col-md-9"></div>
-        <div class="col-md-3">Search Settings</div>
+        <div class="col-md-3">
+          <form role="form">
+            <div class="form-group">
+              <label for="timeWindow">Time Window</label>
+              <select id="timeWindow" onchange="centerMap(map.getCenter())">
+                <option value="3600" selected="1">1 hour</option>
+                <option value="7200">2 hours</option>
+                <option value="14400">4 hours</option>
+                <option value="43200">12 hours</option>
+                <option value="86400">24 hours</option>
+              </select>
+            </div>
+          </form>
+        </div>
       </div>
 
     </div> <!-- /container -->
@@ -129,5 +156,6 @@ google.maps.event.addDomListener(window, 'load', initialize);
     <!-- Placed at the end of the document so the pages load faster -->
     <script type="text/javascript" src="js/jquery-2.1.1.js"></script>
     <script src="js/bootstrap.min.js"></script>
+    <script src="js/aprs-dashboard.js"></script>
   </body>
 </html>
