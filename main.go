@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"errors"
+        "fmt"
 	"github.com/go-martini/martini"
 	"github.com/martini-contrib/binding"
 	"log"
@@ -18,7 +19,7 @@ type RawAprsPacket struct {
 }
 
 func main() {
-	redisHost := os.Getenv("APRS_REDIS_HOST")
+	redisHost := os.Getenv("DB_PORT_6379_TCP_ADDR")
 	if redisHost == "" {
 		log.Fatal("APRS_REDIS_HOST environment variable is not set, but is required, exiting")
 	}
@@ -26,7 +27,7 @@ func main() {
 	redisDatabase := os.Getenv("APRS_REDIS_DATABASE")
 	apiTokens := strings.Split(os.Getenv("APRS_API_TOKENS"), ",")
 
-	db := NewDatabase(redisHost, redisPassword, redisDatabase)
+	db := NewDatabase(fmt.Sprintf("%s:6379", redisHost), redisPassword, redisDatabase)
 	defer db.Close()
 
 	parser := NewParser()

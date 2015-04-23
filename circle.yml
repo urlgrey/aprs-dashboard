@@ -1,27 +1,33 @@
 machine:
   pre:
     - cd ${HOME}
-    - wget https://storage.googleapis.com/golang/go1.3.3.linux-amd64.tar.gz
-    - tar -xzf go1.3.3.linux-amd64.tar.gz
     - wget http://www.pakettiradio.net/downloads/libfap/1.3/deb_amd64/libfap-dev_1.3_amd64.deb
     - wget http://www.pakettiradio.net/downloads/libfap/1.3/deb_amd64/libfap5_1.3_amd64.deb
-    - sudo pip install awscli
-    - sudo apt-get install cmake
     - sudo dpkg -i libfap-dev_1.3_amd64.deb libfap5_1.3_amd64.deb
-    - git clone https://github.com/mattsta/redis; cd redis; git checkout dynamic-redis-unstable; make; src/redis-server --port 7379 & cd ${HOME}; git clone https://github.com/lloyd/yajl; cd yajl; ./configure; make; cd ${HOME}; git clone https://github.com/mattsta/krmt; cd krmt; make -j; ${HOME}/redis/src/redis-cli -p 7379 config set module-add `pwd`/geo.so
+  services:
+    - docker
   environment:
-    GOPATH: ${HOME}/aprs-dashboard/_vendor:${HOME}/aprs-dashboard
-    GOROOT: ${HOME}/go
-    PATH: ${GOROOT}/bin:${PATH}
-    APRS_REDIS_HOST: ":7379"
+    DB_PORT_6379_TCP_ADDR: "localhost"
+checkout:
+  post:
+    - rm -rf ~/.go_workspace/src/github.com/urlgrey
+    - mkdir -p ~/.go_workspace/src/github.com/urlgrey
+    - cp -R ~/aprs-dashboard ~/.go_workspace/src/github.com/urlgrey/aprs-dashboard
+dependencies:
+  override:
+    - go get github.com/tools/godep
+    - docker pull urlgrey/dynamic-redis
+    - cd ${HOME}
+    - wget https://raw.githubusercontent.com/urlgrey/docker-dynamic-redis/master/redis.conf
+    - docker run --name db -p 7379:6379 -d -v `pwd`/redis.conf:/usr/local/etc/redis/redis.conf dynamic-redis:latest redis-server /usr/local/etc/redis/redis.conf
 test:
   override:
-    - make build test
+    - cd ~/.go_workspace/src/github.com/urlgrey/aprs-dashboard && make all docker-build
+  post:
+    - docker run -d --link db:db -p 3000:3000 urlgrey/aprs-dashboard:latest; sleep 5
+    - curl --retry 10 --retry-delay 5 -v http://localhost:3000/
 deployment:
   automerge:
     branch: [master]
     commands:
-      - tar -czf aprs-dashboard-x86_64-${CIRCLE_SHA1}.tar.gz aprs-dashboard
-      - aws s3 cp aprs-dashboard-x86_64-${CIRCLE_SHA1}.tar.gz s3://aprs-dashboard-builds/${CIRCLE_BRANCH}/aprs-dashboard-x86_64-${CIRCLE_SHA1}.tar.gz
-      - tar -czf aprs-dashboard-assets-${CIRCLE_SHA1}.tar.gz assets
-      - aws s3 cp aprs-dashboard-assets-${CIRCLE_SHA1}.tar.gz s3://aprs-dashboard-builds/${CIRCLE_BRANCH}/aprs-dashboard-assets-${CIRCLE_SHA1}.tar.gz
+      - make docker-deploy
