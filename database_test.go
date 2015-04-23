@@ -8,7 +8,7 @@ import (
 )
 
 func Test_NewDatabase(t *testing.T) {
-	db := NewDatabase(os.Getenv("APRS_REDIS_HOST"), "", "")
+	db := NewDatabase(os.Getenv("DB_PORT_6379_TCP_ADDR"), "", "")
 	defer db.Close()
 	err := db.Ping()
 	if err != nil {
@@ -17,7 +17,7 @@ func Test_NewDatabase(t *testing.T) {
 }
 
 func Test_RecordMessage(t *testing.T) {
-	db := NewDatabase(os.Getenv("APRS_REDIS_HOST"), "", "")
+	db := NewDatabase(os.Getenv("DB_PORT_6379_TCP_ADDR"), "", "")
 	defer db.Close()
 	cleanup(db)
 	defer cleanup(db)
@@ -80,7 +80,7 @@ func Test_getFormattedTime(t *testing.T) {
 }
 
 func Test_GetMostRecentMessageForCallsign(t *testing.T) {
-	db := NewDatabase(os.Getenv("APRS_REDIS_HOST"), "", "")
+	db := NewDatabase(os.Getenv("DB_PORT_6379_TCP_ADDR"), "", "")
 	defer db.Close()
 	cleanup(db)
 	defer cleanup(db)
@@ -100,7 +100,7 @@ func Test_GetMostRecentMessageForCallsign(t *testing.T) {
 }
 
 func Test_GetMostRecentMessageForUnrecognizedCallsign(t *testing.T) {
-	db := NewDatabase(os.Getenv("APRS_REDIS_HOST"), "", "")
+	db := NewDatabase(os.Getenv("DB_PORT_6379_TCP_ADDR"), "", "")
 	defer db.Close()
 	cleanup(db)
 	defer cleanup(db)
@@ -115,7 +115,7 @@ func Test_GetMostRecentMessageForUnrecognizedCallsign(t *testing.T) {
 }
 
 func Test_GetRecordsNearPosition(t *testing.T) {
-	db := NewDatabase(os.Getenv("APRS_REDIS_HOST"), "", "")
+	db := NewDatabase(os.Getenv("DB_PORT_6379_TCP_ADDR"), "", "")
 	defer db.Close()
 	cleanup(db)
 	defer cleanup(db)
@@ -137,7 +137,7 @@ func Test_GetRecordsNearPosition(t *testing.T) {
 }
 
 func Benchmark_RecordMessage(b *testing.B) {
-	db := NewDatabase(os.Getenv("APRS_REDIS_HOST"), "", "")
+	db := NewDatabase(os.Getenv("DB_PORT_6379_TCP_ADDR"), "", "")
 	defer db.Close()
 	cleanup(db)
 	defer cleanup(db)
@@ -151,7 +151,7 @@ func Benchmark_RecordMessage(b *testing.B) {
 	}
 }
 func Benchmark_RetrieveMostRecentEntriesForCallsign(b *testing.B) {
-	db := NewDatabase(os.Getenv("APRS_REDIS_HOST"), "", "")
+	db := NewDatabase(os.Getenv("DB_PORT_6379_TCP_ADDR"), "", "")
 	defer db.Close()
 	cleanup(db)
 	defer cleanup(db)
@@ -172,7 +172,7 @@ func Benchmark_RetrieveMostRecentEntriesForCallsign(b *testing.B) {
 }
 
 func Benchmark_RetrieveMiddleEntriesForCallsign(b *testing.B) {
-	db := NewDatabase(os.Getenv("APRS_REDIS_HOST"), "", "")
+	db := NewDatabase(os.Getenv("DB_PORT_6379_TCP_ADDR"), "", "")
 	defer db.Close()
 	cleanup(db)
 	defer cleanup(db)
@@ -199,7 +199,7 @@ func Benchmark_GetFormattedTime(b *testing.B) {
 }
 
 func Benchmark_GetRecordsNearPosition(b *testing.B) {
-	db := NewDatabase(os.Getenv("APRS_REDIS_HOST"), "", "")
+	db := NewDatabase(os.Getenv("DB_PORT_6379_TCP_ADDR"), "", "")
 	defer db.Close()
 	cleanup(db)
 	defer cleanup(db)
