@@ -19,7 +19,7 @@ dependencies:
     - docker pull urlgrey/dynamic-redis
     - cd ${HOME}
     - wget https://raw.githubusercontent.com/urlgrey/docker-dynamic-redis/master/redis.conf
-    - docker run --name db -p 7379:6379 -d -v `pwd`/redis.conf:/usr/local/etc/redis/redis.conf dynamic-redis:latest redis-server /usr/local/etc/redis/redis.conf
+    - docker run --name db -p 7379:6379 -d -v `pwd`/redis.conf:/usr/local/etc/redis/redis.conf urlgrey/dynamic-redis:latest redis-server /usr/local/etc/redis/redis.conf
 test:
   override:
     - cd ~/.go_workspace/src/github.com/urlgrey/aprs-dashboard && make all docker-build
