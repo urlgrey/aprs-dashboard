@@ -3,7 +3,6 @@ package main
 import (
 	"encoding/json"
 	"errors"
-        "fmt"
 	"github.com/go-martini/martini"
 	"github.com/martini-contrib/binding"
 	"log"
