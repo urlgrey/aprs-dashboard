@@ -7,7 +7,7 @@ machine:
   services:
     - docker
   environment:
-    DB_PORT_6379_TCP_ADDR: "localhost"
+    DB_PORT: "tcp://127.0.0.1:7379"
 checkout:
   post:
     - rm -rf ~/.go_workspace/src/github.com/urlgrey

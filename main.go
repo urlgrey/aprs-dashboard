@@ -19,15 +19,15 @@ type RawAprsPacket struct {
 }
 
 func main() {
-	redisHost := os.Getenv("DB_PORT_6379_TCP_ADDR")
+	redisHost := strings.TrimLeft(os.Getenv("DB_PORT"), "tcp://")
 	if redisHost == "" {
-		log.Fatal("APRS_REDIS_HOST environment variable is not set, but is required, exiting")
+		log.Fatal("DB_PORT environment variable is not set, but is required, exiting")
 	}
 	redisPassword := os.Getenv("APRS_REDIS_PASSWORD")
 	redisDatabase := os.Getenv("APRS_REDIS_DATABASE")
 	apiTokens := strings.Split(os.Getenv("APRS_API_TOKENS"), ",")
 
-	db := NewDatabase(fmt.Sprintf("%s:6379", redisHost), redisPassword, redisDatabase)
+	db := NewDatabase(redisHost, redisPassword, redisDatabase)
 	defer db.Close()
 
 	parser := NewParser()
