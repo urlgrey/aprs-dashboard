@@ -14,7 +14,7 @@ import (
 	"github.com/urlgrey/aprs-dashboard/parser"
 )
 
-func InitializeRouter(m *martini.ClassicMartini) {
+func InitializeRouterForMessageHandlers(m *martini.ClassicMartini) {
 	m.Put("/api/v1/message", binding.Bind(models.RawAprsPacket{}), messageHandler)
 }
 
