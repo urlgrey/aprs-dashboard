@@ -1,13 +1,16 @@
-package main
+package db
 
 import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/garyburd/redigo/redis"
-	gset "github.com/urlgrey/golang-set"
 	"log"
 	"time"
+
+	"github.com/urlgrey/aprs-dashboard/models"
+
+	"github.com/garyburd/redigo/redis"
+	gset "github.com/urlgrey/golang-set"
 )
 
 type Database struct {
@@ -15,15 +18,15 @@ type Database struct {
 }
 
 type PositionResults struct {
-	Size    int64         `json:"size"`
-	Records []AprsMessage `json:"records"`
+	Size    int64                `json:"size"`
+	Records []models.AprsMessage `json:"records"`
 }
 
 type PaginatedCallsignResults struct {
-	Page                 int64         `json:"page"`
-	NumberOfPages        int64         `json:"number_of_pages"`
-	TotalNumberOfRecords int64         `json:"total_number_of_records"`
-	Records              []AprsMessage `json:"records"`
+	Page                 int64                `json:"page"`
+	NumberOfPages        int64                `json:"number_of_pages"`
+	TotalNumberOfRecords int64                `json:"total_number_of_records"`
+	Records              []models.AprsMessage `json:"records"`
 }
 
 const maxCallsignRecordsToKeep = 999
@@ -86,7 +89,7 @@ func (db *Database) Delete(key string) {
 	c.Do("DEL", key)
 }
 
-func (db *Database) RecordMessage(sourceCallsign string, message *AprsMessage) error {
+func (db *Database) RecordMessage(sourceCallsign string, message *models.AprsMessage) error {
 	jsonBytes, marshalErr := json.Marshal(message)
 	if marshalErr != nil {
 		log.Println("Error converting message to JSON", marshalErr)
@@ -123,17 +126,17 @@ func (db *Database) RecordMessage(sourceCallsign string, message *AprsMessage) e
 	}
 }
 
-func (db *Database) GetMostRecentMessageForCallsign(callsign string) (*AprsMessage, error) {
+func (db *Database) GetMostRecentMessageForCallsign(callsign string) (*models.AprsMessage, error) {
 	c := db.redisPool.Get()
 	defer c.Close()
 
 	msgBytes, err := redis.Bytes(c.Do("HGET", "aprs:last", callsign))
 	if err == nil {
-		var m AprsMessage
+		var m models.AprsMessage
 		err = json.Unmarshal(msgBytes, &m)
 		return &m, err
 	} else {
-		return &AprsMessage{}, err
+		return &models.AprsMessage{}, err
 	}
 }
 
@@ -178,11 +181,11 @@ func (db *Database) GetRecordsNearPosition(lat float64, long float64, timeInterv
 		recentNearbyCallsigns := makeSet(callsignsNearPos).Intersect(makeSet(callsignsInTimeInterval)).ToSlice()
 		reply, err := redis.Strings(redis.Values(c.Do("HMGET", redis.Args{}.Add("aprs:last").AddFlat(recentNearbyCallsigns)...)))
 
-		records := []AprsMessage{}
+		records := []models.AprsMessage{}
 		if err == nil {
 			for _, item := range reply {
 				if item != "" {
-					var m AprsMessage
+					var m models.AprsMessage
 					unmarshalErr := json.Unmarshal([]byte(item), &m)
 					if unmarshalErr == nil {
 						records = append(records, m)
@@ -197,7 +200,7 @@ func (db *Database) GetRecordsNearPosition(lat float64, long float64, timeInterv
 			}, nil
 		}
 	}
-	return &PositionResults{Size: 0, Records: []AprsMessage{}}, err
+	return &PositionResults{Size: 0, Records: []models.AprsMessage{}}, err
 }
 
 func (db *Database) GetRecordsForCallsign(callsign string, page int64) (*PaginatedCallsignResults, error) {
@@ -208,9 +211,9 @@ func (db *Database) GetRecordsForCallsign(callsign string, page int64) (*Paginat
 		startingRecord := ((page - 1) * 10)
 		endingRecord := (page * 10) - 1
 		messages, _ := db.PaginatedMessagesForCallsign(callsign, startingRecord, endingRecord)
-		resultingMessages := []AprsMessage{}
+		resultingMessages := []models.AprsMessage{}
 		for _, message := range messages {
-			var m AprsMessage
+			var m models.AprsMessage
 			unmarshalErr := json.Unmarshal([]byte(message), &m)
 			if unmarshalErr == nil {
 				resultingMessages = append(resultingMessages, m)

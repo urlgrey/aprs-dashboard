@@ -1,8 +1,10 @@
 GO ?= godep go
 
 all: build test
+
 godep:
 	go get github.com/tools/godep
+
 godep-save:
 	godep save ./...
 
@@ -16,7 +18,7 @@ fmt:
 	$(GO) fmt
 
 test:
-	$(GO) test
+	$(GO) test ./...
 
 bench:
 	$(GO) test -bench . -parallel 2

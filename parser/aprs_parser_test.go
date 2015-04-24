@@ -1,4 +1,4 @@
-package main
+package parser
 
 import (
 	"testing"
@@ -10,7 +10,7 @@ func Test_ParseAprsNonAX25PacketWithLocation(t *testing.T) {
 	p := NewParser()
 	defer p.Finish()
 
-	msg, err := p.parseAprsPacket("K7SSW>APRS,TCPXX*,qAX,CWOP-5:@100235z4743.22N/12222.41W_135/000g000t047r004p009P008h95b10132lOww_0.86.5", false)
+	msg, err := p.ParseAprsPacket("K7SSW>APRS,TCPXX*,qAX,CWOP-5:@100235z4743.22N/12222.41W_135/000g000t047r004p009P008h95b10132lOww_0.86.5", false)
 	timeAfterTest := int32(time.Now().Unix())
 
 	if err != nil {
@@ -38,7 +38,7 @@ func Test_ParseAprsNonAX25PacketWithLocationAndSpeed(t *testing.T) {
 	p := NewParser()
 	defer p.Finish()
 
-	msg, err := p.parseAprsPacket("KK6OLB-1>S8RUQU,WIDE1-1,WIDE2-1,qAR,KI6TEV-1:`2I\"l6h>/]\"43}Santa Rosa CA USA=", false)
+	msg, err := p.ParseAprsPacket("KK6OLB-1>S8RUQU,WIDE1-1,WIDE2-1,qAR,KI6TEV-1:`2I\"l6h>/]\"43}Santa Rosa CA USA=", false)
 	timeAfterTest := int32(time.Now().Unix())
 
 	if err != nil {
@@ -75,7 +75,7 @@ func Test_ParseAprsNonAX25PacketWithLocationAndWeather(t *testing.T) {
 	p := NewParser()
 	defer p.Finish()
 
-	msg, err := p.parseAprsPacket("DW6161>APRS,TCPXX*,qAX,CWOP-4:@101509z5004.48N/00645.00E_049/000g000t046r000p019P013h97b10123WeatherCatV123B16H31", false)
+	msg, err := p.ParseAprsPacket("DW6161>APRS,TCPXX*,qAX,CWOP-4:@101509z5004.48N/00645.00E_049/000g000t046r000p019P013h97b10123WeatherCatV123B16H31", false)
 	timeAfterTest := int32(time.Now().Unix())
 
 	if err != nil {
@@ -123,7 +123,7 @@ func Test_ParseAprsUnsupportedFormatPacket(t *testing.T) {
 	p := NewParser()
 	defer p.Finish()
 
-	msg, err := p.parseAprsPacket("ZS6EY>APN982,ZS0TRG*,WIDE3-2,qAS,ZS6EY-1:g {UIV32N}", false)
+	msg, err := p.ParseAprsPacket("ZS6EY>APN982,ZS0TRG*,WIDE3-2,qAS,ZS6EY-1:g {UIV32N}", false)
 	if err == nil {
 		t.Error("Error was unexpectedly nil", err)
 	}
@@ -146,7 +146,7 @@ func Benchmark_ParseValidAprsPacket(b *testing.B) {
 	defer p.Finish()
 
 	for i := 0; i < b.N; i++ {
-		p.parseAprsPacket("K7SSW>APRS,TCPXX*,qAX,CWOP-5:@100235z4743.22N/12222.41W_135/000g000t047r004p009P008h95b10132lOww_0.86.5", false)
+		p.ParseAprsPacket("K7SSW>APRS,TCPXX*,qAX,CWOP-5:@100235z4743.22N/12222.41W_135/000g000t047r004p009P008h95b10132lOww_0.86.5", false)
 	}
 }
 
@@ -155,6 +155,6 @@ func Benchmark_ParseInvalidAprsPacket(b *testing.B) {
 	defer p.Finish()
 
 	for i := 0; i < b.N; i++ {
-		p.parseAprsPacket("ZS6EY>APN982,ZS0TRG*,WIDE3-2,qAS,ZS6EY-1:g {UIV32N}", false)
+		p.ParseAprsPacket("ZS6EY>APN982,ZS0TRG*,WIDE3-2,qAS,ZS6EY-1:g {UIV32N}", false)
 	}
 }

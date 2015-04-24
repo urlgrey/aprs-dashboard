@@ -1,4 +1,4 @@
-package main
+package parser
 
 // #cgo pkg-config: --libs libfap
 // #include <fap.h>
@@ -9,33 +9,9 @@ import (
 	"strings"
 	"time"
 	"unsafe"
+
+	"github.com/urlgrey/aprs-dashboard/models"
 )
-
-type AprsMessage struct {
-	Timestamp           int32          `json:"timestamp"`
-	SourceCallsign      string         `json:"src_callsign"`
-	DestinationCallsign string         `json:"dst_callsign"`
-	Status              string         `json:"status"`
-	Symbol              string         `json:"symbol"`
-	Latitude            float64        `json:"latitude"`
-	Longitude           float64        `json:"longitude"`
-	IncludesPosition    bool           `json:"includes_position"`
-	Altitude            float64        `json:"altitude"`
-	Speed               float64        `json:"speed"`
-	Course              uint8          `json:"course"`
-	Weather             *WeatherReport `json:"weather_report"`
-	RawMessage          string         `json:"raw_message"`
-}
-
-type WeatherReport struct {
-	Temperature       float64 `json:"temp"`
-	InsideTemperature float64 `json:"temp_in"`
-	Humidity          uint8   `json:"humidity"`
-	InsideHumidity    uint8   `json:"humidity_in"`
-	WindGust          float64 `json:"wind_gust"`
-	WindDirection     uint8   `json:"wind_dir"`
-	WindSpeed         float64 `json:"wind_speed"`
-}
 
 type AprsParser struct{}
 
@@ -48,7 +24,7 @@ func (p *AprsParser) Finish() {
 	defer C.fap_cleanup()
 }
 
-func (p *AprsParser) parseAprsPacket(message string, isAX25 bool) (*AprsMessage, error) {
+func (p *AprsParser) ParseAprsPacket(message string, isAX25 bool) (*models.AprsMessage, error) {
 	message_cstring := C.CString(message)
 	message_length := C.uint(len(message))
 
@@ -57,10 +33,10 @@ func (p *AprsParser) parseAprsPacket(message string, isAX25 bool) (*AprsMessage,
 	defer C.free(unsafe.Pointer(message_cstring))
 
 	if packet.error_code != nil {
-		return &AprsMessage{}, errors.New("Unable to parse APRS message")
+		return &models.AprsMessage{}, errors.New("Unable to parse APRS message")
 	}
 
-	parsedMsg := AprsMessage{
+	parsedMsg := models.AprsMessage{
 		Timestamp:           int32(time.Now().Unix()),
 		SourceCallsign:      strings.ToUpper(C.GoString(packet.src_callsign)),
 		DestinationCallsign: strings.ToUpper(C.GoString(packet.dst_callsign)),
@@ -78,7 +54,7 @@ func (p *AprsParser) parseAprsPacket(message string, isAX25 bool) (*AprsMessage,
 	}
 
 	if packet.wx_report != nil {
-		w := WeatherReport{
+		w := models.WeatherReport{
 			Temperature:       parseNilableFloat(packet.wx_report.temp),
 			InsideTemperature: parseNilableFloat(packet.wx_report.temp_in),
 			Humidity:          parseNilableUInt(packet.wx_report.humidity),
