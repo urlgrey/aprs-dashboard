@@ -4,8 +4,6 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
-	"os"
-	"strings"
 
 	"github.com/go-martini/martini"
 	"github.com/martini-contrib/binding"
@@ -19,14 +17,7 @@ func InitializeRouterForMessageHandlers(m *martini.ClassicMartini) {
 }
 
 func messageHandler(message models.RawAprsPacket) (int, []byte) {
-	redisHost := strings.TrimLeft(os.Getenv("DB_PORT"), "tcp://")
-	if redisHost == "" {
-		log.Fatal("DB_PORT environment variable is not set, but is required, exiting")
-	}
-	redisPassword := os.Getenv("APRS_REDIS_PASSWORD")
-	redisDatabase := os.Getenv("APRS_REDIS_DATABASE")
-
-	database := db.NewDatabase(redisHost, redisPassword, redisDatabase)
+	database := db.NewDatabase()
 	defer database.Close()
 
 	aprsParser := parser.NewParser()

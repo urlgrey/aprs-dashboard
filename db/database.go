@@ -5,6 +5,8 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"os"
+	"strings"
 	"time"
 
 	"github.com/urlgrey/aprs-dashboard/models"
@@ -31,7 +33,14 @@ type PaginatedCallsignResults struct {
 
 const maxCallsignRecordsToKeep = 999
 
-func NewDatabase(server string, password string, database string) *Database {
+func NewDatabase() *Database {
+	server := strings.TrimLeft(os.Getenv("DB_PORT"), "tcp://")
+	if server == "" {
+		log.Fatal("DB_PORT environment variable is not set, but is required, exiting")
+	}
+	password := os.Getenv("APRS_REDIS_PASSWORD")
+	database := os.Getenv("APRS_REDIS_DATABASE")
+
 	db := Database{}
 	db.redisPool = &redis.Pool{
 		MaxIdle:     3,

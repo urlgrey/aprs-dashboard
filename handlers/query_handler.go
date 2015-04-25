@@ -4,8 +4,6 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
-	"os"
-	"strings"
 
 	"github.com/go-martini/martini"
 	"github.com/urlgrey/aprs-dashboard/db"
@@ -17,14 +15,7 @@ func InitializeRouterForQueryHandlers(m *martini.ClassicMartini) {
 }
 
 func callsignQueryHandler(req *http.Request, params martini.Params) (int, []byte) {
-	redisHost := strings.TrimLeft(os.Getenv("DB_PORT"), "tcp://")
-	if redisHost == "" {
-		log.Fatal("DB_PORT environment variable is not set, but is required, exiting")
-	}
-	redisPassword := os.Getenv("APRS_REDIS_PASSWORD")
-	redisDatabase := os.Getenv("APRS_REDIS_DATABASE")
-
-	database := db.NewDatabase(redisHost, redisPassword, redisDatabase)
+	database := db.NewDatabase()
 	defer database.Close()
 
 	page := parseOptionalIntParam(req.URL.Query().Get("page"), 1)
@@ -40,14 +31,7 @@ func callsignQueryHandler(req *http.Request, params martini.Params) (int, []byte
 }
 
 func positionQueryHandler(req *http.Request, params martini.Params) (int, []byte) {
-	redisHost := strings.TrimLeft(os.Getenv("DB_PORT"), "tcp://")
-	if redisHost == "" {
-		log.Fatal("DB_PORT environment variable is not set, but is required, exiting")
-	}
-	redisPassword := os.Getenv("APRS_REDIS_PASSWORD")
-	redisDatabase := os.Getenv("APRS_REDIS_DATABASE")
-
-	database := db.NewDatabase(redisHost, redisPassword, redisDatabase)
+	database := db.NewDatabase()
 	defer database.Close()
 
 	var parseErr error
