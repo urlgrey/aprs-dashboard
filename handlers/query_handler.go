@@ -2,57 +2,66 @@ package handlers
 
 import (
 	"encoding/json"
-	"log"
+	"fmt"
 	"net/http"
 
-	"github.com/go-martini/martini"
+	"github.com/gorilla/mux"
 	"github.com/urlgrey/aprs-dashboard/db"
 )
 
-func InitializeRouterForQueryHandlers(m *martini.ClassicMartini) {
-	m.Get("/api/v1/callsign/:callsign", callsignQueryHandler)
-	m.Get("/api/v1/position", positionQueryHandler)
+type QueryHandler struct {
+	database *db.Database
 }
 
-func callsignQueryHandler(req *http.Request, params martini.Params) (int, []byte) {
-	database := db.NewDatabase()
-	defer database.Close()
+func InitializeRouterForQueryHandlers(r *mux.Router, database *db.Database) {
+	h := &QueryHandler{database: database}
+	r.HandleFunc("/api/v1/callsign/:callsign", h.callsignQueryHandler)
+	r.HandleFunc("/api/v1/position", h.positionQueryHandler)
+}
 
+func (h *QueryHandler) callsignQueryHandler(resp http.ResponseWriter, req *http.Request) {
 	page := parseOptionalIntParam(req.URL.Query().Get("page"), 1)
-	records, err := database.GetRecordsForCallsign(params["callsign"], page)
-	if err == nil {
-		body, _ := json.Marshal(records)
-		return http.StatusOK, body
-	} else {
-		log.Println("Unable to find callsign data", params["callsign"])
-		body, _ := json.Marshal("{}")
-		return http.StatusNotFound, body
+	var records *db.PaginatedCallsignResults
+	var err error
+	if records, err = h.database.GetRecordsForCallsign(req.URL.Query().Get("callsign"), page); err != nil {
+		http.Error(resp,
+			fmt.Sprintf("Unable to find callsign data %s", req.URL.Query().Get("callsign")),
+			http.StatusNoContent)
+		return
 	}
+
+	resp.Header().Set("Content-Type", "application/json")
+	responseEncoder := json.NewEncoder(resp)
+	responseEncoder.Encode(records)
 }
 
-func positionQueryHandler(req *http.Request, params martini.Params) (int, []byte) {
-	database := db.NewDatabase()
-	defer database.Close()
-
-	var parseErr error
-	lat, parseErr := parseRequiredFloatParam(req.URL.Query().Get("lat"))
-	long, parseErr := parseRequiredFloatParam(req.URL.Query().Get("long"))
+func (h *QueryHandler) positionQueryHandler(resp http.ResponseWriter, req *http.Request) {
+	var err error
+	var lat, long float64
+	if lat, err = parseRequiredFloatParam(req.URL.Query().Get("lat")); err != nil {
+		http.Error(resp,
+			"Error parsing latitude query parameter from request",
+			http.StatusBadRequest)
+		return
+	}
+	if long, err = parseRequiredFloatParam(req.URL.Query().Get("long")); err != nil {
+		http.Error(resp,
+			"Error parsing longitude query parameter from request",
+			http.StatusBadRequest)
+		return
+	}
 	time := parseOptionalIntParam(req.URL.Query().Get("time"), 3600)
 	radiusKM := parseOptionalIntParam(req.URL.Query().Get("radius"), 30)
 
-	if parseErr != nil {
-		log.Println("Unable to parse required parameters for lat-long")
-		body, _ := json.Marshal("{}")
-		return http.StatusBadRequest, body
-	} else {
-		records, err := database.GetRecordsNearPosition(lat, long, time, radiusKM)
-
-		if err == nil {
-			body, _ := json.Marshal(records)
-			return http.StatusOK, body
-		} else {
-			body, _ := json.Marshal("{}")
-			return http.StatusInternalServerError, body
-		}
+	var records *db.PositionResults
+	if records, err = h.database.GetRecordsNearPosition(lat, long, time, radiusKM); err != nil {
+		http.Error(resp,
+			fmt.Sprintf("Error looking up APRS records %+v", err),
+			http.StatusInternalServerError)
+		return
 	}
+
+	resp.Header().Set("Content-Type", "application/json")
+	responseEncoder := json.NewEncoder(resp)
+	responseEncoder.Encode(records)
 }

@@ -1,12 +1,22 @@
 package binding
 
+import (
+	"encoding/json"
+	"net/http"
+	"strings"
+)
+
+// This file shamelessly adapted from martini-contrib/binding
+
 type (
 	// Errors may be generated during deserialization, binding,
-	// or validation. This type is mapped to the context so you
-	// can inject it into your own handlers and use it in your
-	// application if you want all your errors to look the same.
+	// or validation. It implements the built-in error interface.
 	Errors []Error
 
+	// Error is a powerful implementation of the built-in error
+	// interface that allows for error classification, custom error
+	// messages associated with specific fields, or with no
+	// associations at all.
 	Error struct {
 		// An error supports zero or more field names, because an
 		// error can morph three ways: (1) it can indicate something
@@ -56,51 +66,35 @@ func (e *Errors) Has(class string) bool {
 	return false
 }
 
-/*
-// WithClass gets a copy of errors that are classified by the
-// the given classification.
-func (e *Errors) WithClass(classification string) Errors {
-	var errs Errors
-	for _, err := range *e {
-		if err.Kind() == classification {
-			errs = append(errs, err)
+// Handle writes the errors to response in JSON form if any errors
+// are contained, and it will return true. Otherwise, nothing happens
+// and false is returned.
+// (The value receiver is due to issue 8: https://github.com/mholt/binding/issues/8)
+func (e Errors) Handle(response http.ResponseWriter) bool {
+	if e.Len() > 0 {
+		response.Header().Set("Content-Type", jsonContentType)
+		if e.Has(DeserializationError) {
+			response.WriteHeader(http.StatusBadRequest)
+		} else if e.Has(ContentTypeError) {
+			response.WriteHeader(http.StatusUnsupportedMediaType)
+		} else {
+			response.WriteHeader(StatusUnprocessableEntity)
 		}
+		errOutput, _ := json.Marshal(e)
+		response.Write(errOutput)
+		return true
 	}
-	return errs
+	return false
 }
 
-// ForField gets a copy of errors that are associated with the
-// field by the given name.
-func (e *Errors) ForField(name string) Errors {
-	var errs Errors
-	for _, err := range *e {
-		for _, fieldName := range err.Fields() {
-			if fieldName == name {
-				errs = append(errs, err)
-				break
-			}
-		}
+// Error returns a concatenation of all its error messages.
+func (e Errors) Error() string {
+	messages := []string{}
+	for _, err := range e {
+		messages = append(messages, err.Error())
 	}
-	return errs
+	return strings.Join(messages, ", ")
 }
-
-// Get gets errors of a particular class for the specified
-// field name.
-func (e *Errors) Get(class, fieldName string) Errors {
-	var errs Errors
-	for _, err := range *e {
-		if err.Kind() == class {
-			for _, nameOfField := range err.Fields() {
-				if nameOfField == fieldName {
-					errs = append(errs, err)
-					break
-				}
-			}
-		}
-	}
-	return errs
-}
-*/
 
 // Fields returns the list of field names this error is
 // associated with.

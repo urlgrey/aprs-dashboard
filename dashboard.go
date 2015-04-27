@@ -6,7 +6,10 @@ import (
 	"strings"
 
 	"github.com/go-martini/martini"
+	"github.com/gorilla/mux"
+	"github.com/urlgrey/aprs-dashboard/db"
 	"github.com/urlgrey/aprs-dashboard/handlers"
+	"github.com/urlgrey/aprs-dashboard/parser"
 )
 
 func main() {
@@ -30,8 +33,15 @@ func main() {
 	})
 
 	m.Use(martini.Static("assets")) // serve from the "assets" directory as well
-	handlers.InitializeRouterForMessageHandlers(m)
-	handlers.InitializeRouterForQueryHandlers(m)
+
+	database := db.NewDatabase()
+	defer database.Close()
+	aprsParser := parser.NewParser()
+	defer aprsParser.Finish()
+
+	r := mux.NewRouter()
+	handlers.InitializeRouterForMessageHandlers(r, database, aprsParser)
+	handlers.InitializeRouterForQueryHandlers(r, database)
 
 	m.Run()
 }

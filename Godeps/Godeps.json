@@ -20,12 +20,20 @@
 		},
 		{
 			"ImportPath": "github.com/go-martini/martini",
-			"Comment": "v1.0-124-gd398859",
-			"Rev": "d39885924ac22dcafaa9fd452a3af1261107799d"
+			"Comment": "v1.0-117-g2047b73",
+			"Rev": "2047b7394d319aa3feb49db1452202336fb66fb6"
 		},
 		{
-			"ImportPath": "github.com/martini-contrib/binding",
-			"Rev": "1928ed2850e7d65507ea4198d935597e43612c7d"
+			"ImportPath": "github.com/gorilla/context",
+			"Rev": "215affda49addc4c8ef7e2534915df2c8c35c6cd"
+		},
+		{
+			"ImportPath": "github.com/gorilla/mux",
+			"Rev": "8096f47503459bcc74d1f4c487b7e6e42e5746b5"
+		},
+		{
+			"ImportPath": "github.com/mholt/binding",
+			"Rev": "6c082304f300fc70793cb0be18af0fdd4acd2b75"
 		},
 		{
 			"ImportPath": "github.com/urlgrey/golang-set",

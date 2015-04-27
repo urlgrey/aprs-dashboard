@@ -2,40 +2,52 @@ package handlers
 
 import (
 	"encoding/json"
-	"log"
+	"fmt"
 	"net/http"
 
-	"github.com/go-martini/martini"
-	"github.com/martini-contrib/binding"
+	"github.com/gorilla/mux"
+	"github.com/mholt/binding"
 	"github.com/urlgrey/aprs-dashboard/db"
 	"github.com/urlgrey/aprs-dashboard/models"
 	"github.com/urlgrey/aprs-dashboard/parser"
 )
 
-func InitializeRouterForMessageHandlers(m *martini.ClassicMartini) {
-	m.Put("/api/v1/message", binding.Bind(models.RawAprsPacket{}), messageHandler)
+type MessageHandler struct {
+	database *db.Database
+	parser   *parser.AprsParser
 }
 
-func messageHandler(message models.RawAprsPacket) (int, []byte) {
-	database := db.NewDatabase()
-	defer database.Close()
+func InitializeRouterForMessageHandlers(r *mux.Router, database *db.Database, parser *parser.AprsParser) {
+	h := MessageHandler{database: database, parser: parser}
+	r.HandleFunc("/api/v1/message", h.messageHandler).Methods("PUT")
+}
 
-	aprsParser := parser.NewParser()
-	defer aprsParser.Finish()
-
-	aprsMessage, parseErr := aprsParser.ParseAprsPacket(message.Data, message.IsAX25)
-	if parseErr != nil {
-		body, _ := json.Marshal("{}")
-		return http.StatusNotAcceptable, body
-	} else {
-		if aprsMessage.SourceCallsign != "" {
-			database.RecordMessage(aprsMessage.SourceCallsign, aprsMessage)
-			body, _ := json.Marshal("{}")
-			return http.StatusOK, body
-		} else {
-			log.Println("Unable to find source callsign in APRS message")
-			body, _ := json.Marshal("{}")
-			return http.StatusNotAcceptable, body
-		}
+func (h *MessageHandler) messageHandler(resp http.ResponseWriter, req *http.Request) {
+	message := new(models.RawAprsPacket)
+	errs := binding.Bind(req, message)
+	if errs.Handle(resp) {
+		return
 	}
+
+	var aprsMessage *models.AprsMessage
+	var err error
+	if aprsMessage, err = h.parser.ParseAprsPacket(message.Data, message.IsAX25); err != nil {
+		http.Error(resp,
+			fmt.Sprintf("Error parsing APRS message %+v", err),
+			http.StatusInternalServerError)
+		return
+	}
+
+	if aprsMessage.SourceCallsign == "" {
+		http.Error(resp,
+			fmt.Sprintf("Unable to find source callsign in APRS message"),
+			http.StatusBadRequest)
+		return
+	}
+
+	h.database.RecordMessage(aprsMessage.SourceCallsign, aprsMessage)
+
+	resp.Header().Set("Content-Type", "application/json")
+	responseEncoder := json.NewEncoder(resp)
+	responseEncoder.Encode("{}")
 }
