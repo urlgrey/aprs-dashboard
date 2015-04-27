@@ -1,8 +1,7 @@
-package martini
+package negroni
 
 import (
 	"bufio"
-	"io"
 	"net"
 	"net/http"
 	"net/http/httptest"
@@ -47,7 +46,7 @@ func (h *hijackableResponse) Hijack() (net.Conn, *bufio.ReadWriter, error) {
 	return nil, nil, nil
 }
 
-func Test_ResponseWriter_WritingString(t *testing.T) {
+func TestResponseWriterWritingString(t *testing.T) {
 	rec := httptest.NewRecorder()
 	rw := NewResponseWriter(rec)
 
@@ -60,7 +59,7 @@ func Test_ResponseWriter_WritingString(t *testing.T) {
 	expect(t, rw.Written(), true)
 }
 
-func Test_ResponseWriter_WritingStrings(t *testing.T) {
+func TestResponseWriterWritingStrings(t *testing.T) {
 	rec := httptest.NewRecorder()
 	rw := NewResponseWriter(rec)
 
@@ -73,7 +72,7 @@ func Test_ResponseWriter_WritingStrings(t *testing.T) {
 	expect(t, rw.Size(), 26)
 }
 
-func Test_ResponseWriter_WritingHeader(t *testing.T) {
+func TestResponseWriterWritingHeader(t *testing.T) {
 	rec := httptest.NewRecorder()
 	rw := NewResponseWriter(rec)
 
@@ -85,7 +84,7 @@ func Test_ResponseWriter_WritingHeader(t *testing.T) {
 	expect(t, rw.Size(), 0)
 }
 
-func Test_ResponseWriter_Before(t *testing.T) {
+func TestResponseWriterBefore(t *testing.T) {
 	rec := httptest.NewRecorder()
 	rw := NewResponseWriter(rec)
 	result := ""
@@ -106,7 +105,7 @@ func Test_ResponseWriter_Before(t *testing.T) {
 	expect(t, result, "barfoo")
 }
 
-func Test_ResponseWriter_Hijack(t *testing.T) {
+func TestResponseWriterHijack(t *testing.T) {
 	hijackable := newHijackableResponse()
 	rw := NewResponseWriter(hijackable)
 	hijacker, ok := rw.(http.Hijacker)
@@ -118,7 +117,7 @@ func Test_ResponseWriter_Hijack(t *testing.T) {
 	expect(t, hijackable.Hijacked, true)
 }
 
-func Test_ResponseWrite_Hijack_NotOK(t *testing.T) {
+func TestResponseWriteHijackNotOK(t *testing.T) {
 	hijackable := new(http.ResponseWriter)
 	rw := NewResponseWriter(*hijackable)
 	hijacker, ok := rw.(http.Hijacker)
@@ -128,7 +127,7 @@ func Test_ResponseWrite_Hijack_NotOK(t *testing.T) {
 	refute(t, err, nil)
 }
 
-func Test_ResponseWriter_CloseNotify(t *testing.T) {
+func TestResponseWriterCloseNotify(t *testing.T) {
 	rec := newCloseNotifyingRecorder()
 	rw := NewResponseWriter(rec)
 	closed := false
@@ -142,47 +141,10 @@ func Test_ResponseWriter_CloseNotify(t *testing.T) {
 	expect(t, closed, true)
 }
 
-func Test_ResponseWriter_Flusher(t *testing.T) {
-
+func TestResponseWriterFlusher(t *testing.T) {
 	rec := httptest.NewRecorder()
 	rw := NewResponseWriter(rec)
 
 	_, ok := rw.(http.Flusher)
 	expect(t, ok, true)
-}
-
-func Test_ResponseWriter_FlusherHandler(t *testing.T) {
-
-	// New martini instance
-	m := Classic()
-
-	m.Get("/events", func(w http.ResponseWriter, r *http.Request) {
-
-		f, ok := w.(http.Flusher)
-		expect(t, ok, true)
-
-		w.Header().Set("Content-Type", "text/event-stream")
-		w.Header().Set("Cache-Control", "no-cache")
-		w.Header().Set("Connection", "keep-alive")
-
-		for i := 0; i < 2; i++ {
-			time.Sleep(10 * time.Millisecond)
-			io.WriteString(w, "data: Hello\n\n")
-			f.Flush()
-		}
-
-	})
-
-	recorder := httptest.NewRecorder()
-	r, _ := http.NewRequest("GET", "/events", nil)
-	m.ServeHTTP(recorder, r)
-
-	if recorder.Code != 200 {
-		t.Error("Response not 200")
-	}
-
-	if recorder.Body.String() != "data: Hello\n\ndata: Hello\n\n" {
-		t.Error("Didn't receive correct body, got:", recorder.Body.String())
-	}
-
 }

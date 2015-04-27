@@ -15,7 +15,7 @@ build:
 	$(GO) build -v -o bin/aprs-dashboard
 
 fmt:
-	$(GO) fmt
+	$(GO) fmt ./...
 
 test:
 	$(GO) test ./...
