@@ -5,78 +5,24 @@ Service API to record and query for Automated Position Reporting System (APRS) m
 
 Installation
 ------------
+APRS Dashboard is designed to run in a [Docker](https://www.docker.com/) container.  Hopefully you've come to know and love the flexibility and ease that comes with using Docker.  [APRS Dashboard Docker images](https://registry.hub.docker.com/u/urlgrey/aprs-dashboard/) are available on DockerHub.
 
-### Dynamic Redis
-Dynamic Redis is needed for the Geo module.  More information about Dynamic Redis can be found on the project site:
-https://matt.sh/dynamic-redis
-
-```shell
-mkdir -p ~/repos
-cd ~/repos
-git clone https://github.com/mattsta/redis
-cd redis
-git checkout dynamic-redis-unstable
-make
-make test
-```
-
-If the build succeeded, then run the Redis server:
+APRS messages are stored in a Redis database.  The [Dynamic Redis](https://matt.sh/dynamic-redis) fork is used so that geo searches by latitude-longitude can be performed on Redis data.  These instructions make use of a [Docker image for the Dynamic Redis server](https://registry.hub.docker.com/u/urlgrey/dynamic-redis/).
 
 ```shell
-~/repos/redis/src/redis-server &
+docker pull urlgrey/dynamic-redis
+docker pull urlgrey/aprs-dashboard
+
+# Run Redis container
+sudo docker run --name aprs_db -d -p 6379:6379 -v /home/skidder/git/docker-dynamic-redis/redis.conf:/usr/local/etc/redis/redis.conf urlgrey/dynamic-redis:latest redis-server /usr/local/etc/redis/redis.conf
+
+# Run APRS Dashboard, linking it to the Redis container
+sudo docker run -d --link aprs_db:db -p 3000:3000 urlgrey/aprs-dashboard:latest
 ```
-
-### Redis Geo Module
-The Redis Geo module makes it possible to store & query for geo-tagged data in Redis.
-
-```shell
-cd ~/repos
-git clone https://github.com/mattsta/krmt
-cd krmt
-make -j
-~/repos/redis/src/redis-cli config set module-add `pwd`/geo.so
-```
-
-You should see output like the following:
-
-```shell
-79865:M 12 Nov 07:04:45.783 * Loading new [/Users/scott/repos/krmt/geo.so] module.
-79865:M 12 Nov 07:04:45.783 * Added command geoadd [/Users/scott/repos/krmt/geo.so]
-79865:M 12 Nov 07:04:45.783 * Added command georadius [/Users/scott/repos/krmt/geo.so]
-79865:M 12 Nov 07:04:45.783 * Added command georadiusbymember [/Users/scott/repos/krmt/geo.so]
-79865:M 12 Nov 07:04:45.783 * Added command geoencode [/Users/scott/repos/krmt/geo.so]
-79865:M 12 Nov 07:04:45.783 * Added command geodecode [/Users/scott/repos/krmt/geo.so]
-79865:M 12 Nov 07:04:45.783 * Module [/Users/scott/repos/krmt/geo.so] loaded 5 commands.
-79865:M 12 Nov 07:04:45.783 * Running load function of module [/Users/scott/repos/krmt/geo.so].
-OK
-```
-
-### APRS Dashboard
-
-#### Build
-```shell
-make build
-```
-
-#### Test
-```shell
-export APRS_REDIS_HOST=":6379"
-make test
-```
-
-#### Benchmark
-```shell
-export APRS_REDIS_HOST=":6379"
-make bench
-```
-
-#### Run
 
 **Note:** To limit access to the PUT API, optionally set the `APRS_API_TOKENS` environment variable with a comma-separated list of API tokens.  Default behavior is to allow access without the use of a token.
 ```shell
-export APRS_API_TOKENS="secret123"
-export APRS_REDIS_HOST=":6379"
-./aprs-dashboard
+sudo docker run -d --link aprs_db:db -e APRS_API_TOKENS="secret123" -p 3000:3000 urlgrey/aprs-dashboard:latest
 ```
 
 API
