@@ -3,6 +3,7 @@ package handlers
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 
 	"github.com/gorilla/mux"
@@ -15,21 +16,26 @@ type QueryHandler struct {
 
 func InitializeRouterForQueryHandlers(r *mux.Router, database *db.Database) {
 	h := &QueryHandler{database: database}
-	r.HandleFunc("/api/v1/callsign/:callsign", h.callsignQueryHandler)
-	r.HandleFunc("/api/v1/position", h.positionQueryHandler)
+	r.HandleFunc("/api/v1/callsign/{callsign}", h.callsignQueryHandler).Methods("GET")
+	r.HandleFunc("/api/v1/position", h.positionQueryHandler).Methods("GET")
 }
 
 func (h *QueryHandler) callsignQueryHandler(resp http.ResponseWriter, req *http.Request) {
+	vars := mux.Vars(req)
+	callsign := vars["callsign"]
 	page := parseOptionalIntParam(req.URL.Query().Get("page"), 1)
+
+	log.Printf("Searching for callsign: %s, page: %d", callsign, page)
 	var records *db.PaginatedCallsignResults
 	var err error
-	if records, err = h.database.GetRecordsForCallsign(req.URL.Query().Get("callsign"), page); err != nil {
+	if records, err = h.database.GetRecordsForCallsign(callsign, page); err != nil {
 		http.Error(resp,
-			fmt.Sprintf("Unable to find callsign data %s", req.URL.Query().Get("callsign")),
+			fmt.Sprintf("Unable to find callsign data %s", callsign),
 			http.StatusNoContent)
 		return
 	}
 
+	log.Printf("Number of records found: %d", records.TotalNumberOfRecords)
 	resp.Header().Set("Content-Type", "application/json")
 	responseEncoder := json.NewEncoder(resp)
 	responseEncoder.Encode(records)

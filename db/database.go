@@ -131,6 +131,7 @@ func (db *Database) RecordMessage(sourceCallsign string, message *models.AprsMes
 			_, err = c.Receive()
 		}
 
+		log.Printf("Added APRS message for callsign: %s", sourceCallsign)
 		return err
 	}
 }

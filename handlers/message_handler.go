@@ -3,6 +3,7 @@ package handlers
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 
 	"github.com/gorilla/mux"
@@ -45,7 +46,13 @@ func (h *MessageHandler) messageHandler(resp http.ResponseWriter, req *http.Requ
 		return
 	}
 
-	h.database.RecordMessage(aprsMessage.SourceCallsign, aprsMessage)
+	if err = h.database.RecordMessage(aprsMessage.SourceCallsign, aprsMessage); err != nil {
+		log.Printf("Error while storing APRS message: %s", err)
+		http.Error(resp,
+			"Error storing APRS message",
+			http.StatusInternalServerError)
+		return
+	}
 
 	resp.Header().Set("Content-Type", "application/json")
 	responseEncoder := json.NewEncoder(resp)
