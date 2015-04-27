@@ -64,7 +64,7 @@ Observe output resembling the following in the APRS Dashboard console output:
 
 #### Example
 ```shell
-curl -H "Accept: application/json" http://127.0.0.1:3000/api/v1/callsign/WX4GSO?page=1
+curl -H "Accept: application/json" http://127.0.0.1:3000/api/v1/callsign/WX4GSO-9?page=1
 ```
 
 ##### Response
