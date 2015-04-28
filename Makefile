@@ -21,10 +21,7 @@ test:
 	$(GO) test ./...
 
 bench:
-	$(GO) test -bench . -parallel 2
-
-benchmem:
-	$(GO) test -bench . -benchmem -parallel 2
+	$(GO) test ./... -bench .
 
 run: build
 	$(CURDIR)/aprs-dashboard
