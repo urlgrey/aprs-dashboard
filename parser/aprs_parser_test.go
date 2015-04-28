@@ -5,7 +5,7 @@ import (
 	"time"
 )
 
-func Test_ParseAprsNonAX25PacketWithLocation(t *testing.T) {
+func TestParseAprsNonAX25PacketWithLocation(t *testing.T) {
 	timeBeforeTest := int32(time.Now().Unix())
 	p := NewParser()
 	defer p.Finish()
@@ -33,7 +33,7 @@ func Test_ParseAprsNonAX25PacketWithLocation(t *testing.T) {
 	}
 }
 
-func Test_ParseAprsNonAX25PacketWithLocationAndSpeed(t *testing.T) {
+func TestParseAprsNonAX25PacketWithLocationAndSpeed(t *testing.T) {
 	timeBeforeTest := int32(time.Now().Unix())
 	p := NewParser()
 	defer p.Finish()
@@ -70,7 +70,7 @@ func Test_ParseAprsNonAX25PacketWithLocationAndSpeed(t *testing.T) {
 	}
 }
 
-func Test_ParseAprsNonAX25PacketWithLocationAndWeather(t *testing.T) {
+func TestParseAprsNonAX25PacketWithLocationAndWeather(t *testing.T) {
 	timeBeforeTest := int32(time.Now().Unix())
 	p := NewParser()
 	defer p.Finish()
@@ -119,7 +119,7 @@ func Test_ParseAprsNonAX25PacketWithLocationAndWeather(t *testing.T) {
 	}
 }
 
-func Test_ParseAprsUnsupportedFormatPacket(t *testing.T) {
+func TestParseAprsUnsupportedFormatPacket(t *testing.T) {
 	p := NewParser()
 	defer p.Finish()
 
@@ -141,7 +141,7 @@ func Test_ParseAprsUnsupportedFormatPacket(t *testing.T) {
 	}
 }
 
-func Benchmark_ParseValidAprsPacket(b *testing.B) {
+func BenchmarkParseValidAprsPacket(b *testing.B) {
 	p := NewParser()
 	defer p.Finish()
 
@@ -150,7 +150,7 @@ func Benchmark_ParseValidAprsPacket(b *testing.B) {
 	}
 }
 
-func Benchmark_ParseInvalidAprsPacket(b *testing.B) {
+func BenchmarkParseInvalidAprsPacket(b *testing.B) {
 	p := NewParser()
 	defer p.Finish()
 
