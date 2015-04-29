@@ -5,25 +5,39 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
+	"strings"
 
 	"github.com/gorilla/mux"
 	"github.com/mholt/binding"
-	"github.com/urlgrey/aprs-dashboard/db"
 	"github.com/urlgrey/aprs-dashboard/models"
 	"github.com/urlgrey/aprs-dashboard/parser"
+	"github.com/zencoder/disque-go/disque"
 )
 
 type MessageHandler struct {
-	database *db.Database
-	parser   *parser.AprsParser
+	parser *parser.AprsParser
+	disque disque.Disque
 }
 
-func InitializeRouterForMessageHandlers(r *mux.Router, database *db.Database, parser *parser.AprsParser) {
-	h := MessageHandler{database: database, parser: parser}
+func InitializeRouterForMessageHandlers(r *mux.Router, parser *parser.AprsParser) {
+	h := MessageHandler{parser: parser}
 	r.HandleFunc("/api/v1/message", h.messageHandler).Methods("PUT")
 }
 
-func (h *MessageHandler) messageHandler(resp http.ResponseWriter, req *http.Request) {
+func (m *MessageHandler) Initialize() (err error) {
+	disqueHostsEnv := os.Getenv("DISQUE_HOSTS")
+	var disqueHosts []string
+	if disqueHostsEnv == "" {
+		disqueHosts = []string{"127.0.0.1:7711"}
+	} else {
+		disqueHosts = strings.Split(disqueHostsEnv, ",")
+	}
+	d := disque.NewDisque(disqueHosts, 1000)
+	return d.Initialize()
+}
+
+func (m *MessageHandler) messageHandler(resp http.ResponseWriter, req *http.Request) {
 	message := new(models.RawAprsPacket)
 	errs := binding.Bind(req, message)
 	if errs.Handle(resp) {
@@ -32,24 +46,26 @@ func (h *MessageHandler) messageHandler(resp http.ResponseWriter, req *http.Requ
 
 	var aprsMessage *models.AprsMessage
 	var err error
-	if aprsMessage, err = h.parser.ParseAprsPacket(message.Data, message.IsAX25); err != nil {
+	if aprsMessage, err = m.parser.ParseAprsPacket(message.Data, message.IsAX25); err != nil {
 		http.Error(resp,
 			fmt.Sprintf("Error parsing APRS message %+v", err),
-			http.StatusInternalServerError)
-		return
-	}
-
-	if aprsMessage.SourceCallsign == "" {
-		http.Error(resp,
-			fmt.Sprintf("Unable to find source callsign in APRS message"),
 			http.StatusBadRequest)
 		return
 	}
 
-	if err = h.database.RecordMessage(aprsMessage.SourceCallsign, aprsMessage); err != nil {
-		log.Printf("Error while storing APRS message: %s", err)
+	var aprsMessageJson []byte
+	if aprsMessageJson, err = json.Marshal(aprsMessage); err != nil {
+		log.Printf("Error serializing parsed APRS message for queueing: %s", err)
 		http.Error(resp,
-			"Error storing APRS message",
+			"Error serializing APRS message for queueing",
+			http.StatusInternalServerError)
+		return
+	}
+
+	if err = m.disque.Push("aprs_messages", string(aprsMessageJson), 100); err != nil {
+		log.Printf("Error while enqueueing APRS message for asynchronous handling: %s", err)
+		http.Error(resp,
+			"Error queueing APRS message for asynchronous handling",
 			http.StatusInternalServerError)
 		return
 	}

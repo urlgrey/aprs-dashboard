@@ -22,7 +22,7 @@ func main() {
 	defer aprsParser.Finish()
 
 	router := mux.NewRouter()
-	handlers.InitializeRouterForMessageHandlers(router, database, aprsParser)
+	handlers.InitializeRouterForMessageHandlers(router, aprsParser)
 	handlers.InitializeRouterForQueryHandlers(router, database)
 	n.UseHandler(router)
 

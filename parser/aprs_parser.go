@@ -66,6 +66,10 @@ func (p *AprsParser) ParseAprsPacket(message string, isAX25 bool) (*models.AprsM
 		parsedMsg.Weather = &w
 	}
 
+	if parsedMsg.SourceCallsign == "" {
+		return nil, errors.New("Unable to find source callsign in APRS packet")
+	}
+
 	return &parsedMsg, nil
 }
 
