@@ -21,8 +21,10 @@ type MessageHandler struct {
 }
 
 func InitializeRouterForMessageHandlers(r *mux.Router, parser *parser.AprsParser) {
-	h := MessageHandler{parser: parser}
-	r.HandleFunc("/api/v1/message", h.messageHandler).Methods("PUT")
+	m := MessageHandler{parser: parser}
+	m.Initialize()
+
+	r.HandleFunc("/api/v1/message", m.SubmitAPRSMessage).Methods("PUT")
 }
 
 func (m *MessageHandler) Initialize() (err error) {
@@ -37,7 +39,7 @@ func (m *MessageHandler) Initialize() (err error) {
 	return d.Initialize()
 }
 
-func (m *MessageHandler) messageHandler(resp http.ResponseWriter, req *http.Request) {
+func (m *MessageHandler) SubmitAPRSMessage(resp http.ResponseWriter, req *http.Request) {
 	message := new(models.RawAprsPacket)
 	errs := binding.Bind(req, message)
 	if errs.Handle(resp) {

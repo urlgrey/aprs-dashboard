@@ -8,7 +8,8 @@ import (
 func TestParseAprsNonAX25PacketWithLocation(t *testing.T) {
 	timeBeforeTest := int32(time.Now().Unix())
 	p := NewParser()
-	defer p.Finish()
+	p.Initialize()
+	defer p.Close()
 
 	msg, err := p.ParseAprsPacket("K7SSW>APRS,TCPXX*,qAX,CWOP-5:@100235z4743.22N/12222.41W_135/000g000t047r004p009P008h95b10132lOww_0.86.5", false)
 	timeAfterTest := int32(time.Now().Unix())
@@ -36,7 +37,8 @@ func TestParseAprsNonAX25PacketWithLocation(t *testing.T) {
 func TestParseAprsNonAX25PacketWithLocationAndSpeed(t *testing.T) {
 	timeBeforeTest := int32(time.Now().Unix())
 	p := NewParser()
-	defer p.Finish()
+	p.Initialize()
+	defer p.Close()
 
 	msg, err := p.ParseAprsPacket("KK6OLB-1>S8RUQU,WIDE1-1,WIDE2-1,qAR,KI6TEV-1:`2I\"l6h>/]\"43}Santa Rosa CA USA=", false)
 	timeAfterTest := int32(time.Now().Unix())
@@ -73,7 +75,8 @@ func TestParseAprsNonAX25PacketWithLocationAndSpeed(t *testing.T) {
 func TestParseAprsNonAX25PacketWithLocationAndWeather(t *testing.T) {
 	timeBeforeTest := int32(time.Now().Unix())
 	p := NewParser()
-	defer p.Finish()
+	p.Initialize()
+	defer p.Close()
 
 	msg, err := p.ParseAprsPacket("DW6161>APRS,TCPXX*,qAX,CWOP-4:@101509z5004.48N/00645.00E_049/000g000t046r000p019P013h97b10123WeatherCatV123B16H31", false)
 	timeAfterTest := int32(time.Now().Unix())
@@ -121,29 +124,19 @@ func TestParseAprsNonAX25PacketWithLocationAndWeather(t *testing.T) {
 
 func TestParseAprsUnsupportedFormatPacket(t *testing.T) {
 	p := NewParser()
-	defer p.Finish()
+	p.Initialize()
+	defer p.Close()
 
-	msg, err := p.ParseAprsPacket("ZS6EY>APN982,ZS0TRG*,WIDE3-2,qAS,ZS6EY-1:g {UIV32N}", false)
+	_, err := p.ParseAprsPacket("ZS6EY>APN982,ZS0TRG*,WIDE3-2,qAS,ZS6EY-1:g {UIV32N}", false)
 	if err == nil {
 		t.Error("Error was unexpectedly nil", err)
-	}
-	if msg.SourceCallsign != "" {
-		t.Error("Source callsign not parsed correctly", msg.SourceCallsign)
-	}
-	if msg.DestinationCallsign != "" {
-		t.Error("Destination callsign not parsed correctly", msg.DestinationCallsign)
-	}
-	if msg.Latitude != 0 {
-		t.Error("Latitude incorrect", msg.Latitude)
-	}
-	if msg.Longitude != 0 {
-		t.Error("Longitude incorrect", msg.Longitude)
 	}
 }
 
 func BenchmarkParseValidAprsPacket(b *testing.B) {
 	p := NewParser()
-	defer p.Finish()
+	p.Initialize()
+	defer p.Close()
 
 	for i := 0; i < b.N; i++ {
 		p.ParseAprsPacket("K7SSW>APRS,TCPXX*,qAX,CWOP-5:@100235z4743.22N/12222.41W_135/000g000t047r004p009P008h95b10132lOww_0.86.5", false)
@@ -152,7 +145,8 @@ func BenchmarkParseValidAprsPacket(b *testing.B) {
 
 func BenchmarkParseInvalidAprsPacket(b *testing.B) {
 	p := NewParser()
-	defer p.Finish()
+	p.Initialize()
+	defer p.Close()
 
 	for i := 0; i < b.N; i++ {
 		p.ParseAprsPacket("ZS6EY>APN982,ZS0TRG*,WIDE3-2,qAS,ZS6EY-1:g {UIV32N}", false)

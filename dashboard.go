@@ -19,7 +19,8 @@ func main() {
 	database := db.NewDatabase()
 	defer database.Close()
 	aprsParser := parser.NewParser()
-	defer aprsParser.Finish()
+	aprsParser.Initialize()
+	defer aprsParser.Close()
 
 	router := mux.NewRouter()
 	handlers.InitializeRouterForMessageHandlers(router, aprsParser)

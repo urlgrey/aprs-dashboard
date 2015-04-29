@@ -16,27 +16,31 @@ import (
 type AprsParser struct{}
 
 func NewParser() *AprsParser {
-	C.fap_init()
 	return &AprsParser{}
 }
 
-func (p *AprsParser) Finish() {
+func (a *AprsParser) Initialize() {
+	C.fap_init()
+}
+
+func (p *AprsParser) Close() {
 	defer C.fap_cleanup()
 }
 
-func (p *AprsParser) ParseAprsPacket(message string, isAX25 bool) (*models.AprsMessage, error) {
-	message_cstring := C.CString(message)
-	message_length := C.uint(len(message))
+func (p *AprsParser) ParseAprsPacket(rawPacket string, isAX25 bool) (message *models.AprsMessage, err error) {
+	packet_cstring := C.CString(rawPacket)
+	packet_length := C.uint(len(rawPacket))
 
-	packet := C.fap_parseaprs(message_cstring, message_length, C.short(boolToInt(isAX25)))
+	packet := C.fap_parseaprs(packet_cstring, packet_length, C.short(boolToInt(isAX25)))
 	defer C.fap_free(packet)
-	defer C.free(unsafe.Pointer(message_cstring))
+	defer C.free(unsafe.Pointer(packet_cstring))
 
 	if packet.error_code != nil {
-		return &models.AprsMessage{}, errors.New("Unable to parse APRS message")
+		err = errors.New("Unable to parse APRS packet")
+		return
 	}
 
-	parsedMsg := models.AprsMessage{
+	message = &models.AprsMessage{
 		Timestamp:           int32(time.Now().Unix()),
 		SourceCallsign:      strings.ToUpper(C.GoString(packet.src_callsign)),
 		DestinationCallsign: strings.ToUpper(C.GoString(packet.dst_callsign)),
@@ -48,13 +52,13 @@ func (p *AprsParser) ParseAprsPacket(message string, isAX25 bool) (*models.AprsM
 		RawMessage:          C.GoStringN(packet.body, C.int(packet.body_len)),
 	}
 	if packet.latitude != nil && packet.longitude != nil {
-		parsedMsg.IncludesPosition = true
+		message.IncludesPosition = true
 	} else {
-		parsedMsg.IncludesPosition = false
+		message.IncludesPosition = false
 	}
 
 	if packet.wx_report != nil {
-		w := models.WeatherReport{
+		message.Weather = &models.WeatherReport{
 			Temperature:       parseNilableFloat(packet.wx_report.temp),
 			InsideTemperature: parseNilableFloat(packet.wx_report.temp_in),
 			Humidity:          parseNilableUInt(packet.wx_report.humidity),
@@ -63,14 +67,13 @@ func (p *AprsParser) ParseAprsPacket(message string, isAX25 bool) (*models.AprsM
 			WindDirection:     parseNilableUInt(packet.wx_report.wind_dir),
 			WindSpeed:         parseNilableFloat(packet.wx_report.wind_speed),
 		}
-		parsedMsg.Weather = &w
 	}
 
-	if parsedMsg.SourceCallsign == "" {
-		return nil, errors.New("Unable to find source callsign in APRS packet")
+	if message.SourceCallsign == "" {
+		err = errors.New("Unable to find source callsign in APRS packet")
 	}
 
-	return &parsedMsg, nil
+	return
 }
 
 func boolToInt(b bool) int {
