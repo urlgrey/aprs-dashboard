@@ -34,6 +34,10 @@
 			"ImportPath": "github.com/urlgrey/golang-set",
 			"Comment": "v1-25-g154bd31",
 			"Rev": "154bd3129f0f6dae91c0ef77f381693d8db0fa6b"
+		},
+		{
+			"ImportPath": "github.com/zencoder/disque-go/disque",
+			"Rev": "781ca5da4dcc4758a19dd76a4c958cab66372cf8"
 		}
 	]
 }
