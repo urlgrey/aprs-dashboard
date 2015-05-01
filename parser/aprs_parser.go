@@ -61,7 +61,7 @@ func (p *AprsParser) ParseAprsPacket(rawPacket string, isAX25 bool) (message *mo
 
 	switch C.getPacketType(packet) {
 	case C.fapLOCATION:
-		parsedMsg.PacketType = MessagePacketType
+		parsedMsg.PacketType = LocationPacketType
 	case C.fapOBJECT:
 		parsedMsg.PacketType = ObjectPacketType
 	case C.fapITEM:
