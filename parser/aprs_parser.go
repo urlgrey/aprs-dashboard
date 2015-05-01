@@ -1,8 +1,15 @@
 package parser
 
 // #cgo pkg-config: --libs libfap
-// #include <fap.h>
-// #include <stdlib.h>
+/*
+#include <fap.h>
+#include <stdlib.h>
+
+// type is a reserved keyword
+fap_packet_type_t getPacketType(fap_packet_t* p) {
+        return *p->type;
+}
+*/
 import "C"
 import (
 	"errors"
@@ -51,6 +58,36 @@ func (p *AprsParser) ParseAprsPacket(rawPacket string, isAX25 bool) (message *mo
 		Altitude:            parseNilableFloat(packet.altitude),
 		RawMessage:          C.GoStringN(packet.body, C.int(packet.body_len)),
 	}
+
+	switch C.getPacketType(packet) {
+	case C.fapLOCATION:
+		parsedMsg.PacketType = MessagePacketType
+	case C.fapOBJECT:
+		parsedMsg.PacketType = ObjectPacketType
+	case C.fapITEM:
+		parsedMsg.PacketType = ItemPacketType
+	case C.fapMICE:
+		parsedMsg.PacketType = MicePacketType
+	case C.fapNMEA:
+		parsedMsg.PacketType = NMEAPacketType
+	case C.fapWX:
+		parsedMsg.PacketType = WXPacketType
+	case C.fapMESSAGE:
+		parsedMsg.PacketType = MessagePacketType
+	case C.fapCAPABILITIES:
+		parsedMsg.PacketType = CapabilitiesPacketType
+	case C.fapSTATUS:
+		parsedMsg.PacketType = StatusPacketType
+	case C.fapTELEMETRY:
+		parsedMsg.PacketType = TelemetryPacketType
+	case C.fapTELEMETRY_MESSAGE:
+		parsedMsg.PacketType = TelemetryMessagePacketType
+	case C.fapDX_SPOT:
+		parsedMsg.PacketType = DXSpotPacketType
+	case C.fapEXPERIMENTAL:
+		parsedMsg.PacketType = ExperimentalPacketType
+	}
+
 	if packet.latitude != nil && packet.longitude != nil {
 		message.IncludesPosition = true
 	} else {

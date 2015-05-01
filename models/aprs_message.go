@@ -1,6 +1,25 @@
 package models
 
+type PacketType int
+
+const (
+	LocationPacketType PacketType = iota
+	ObjectPacketType
+	ItemPacketType
+	MicePacketType
+	NMEAPacketType
+	WXPacketType
+	MessagePacketType
+	CapabilitiesPacketType
+	StatusPacketType
+	TelemetryPacketType
+	TelemetryMessagePacketType
+	DXSpotPacketType
+	ExperimentalPacketType
+)
+
 type AprsMessage struct {
+	PacketType
 	Timestamp           int32          `json:"timestamp"`
 	SourceCallsign      string         `json:"src_callsign"`
 	DestinationCallsign string         `json:"dst_callsign"`
