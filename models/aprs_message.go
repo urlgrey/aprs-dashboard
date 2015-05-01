@@ -16,6 +16,7 @@ const (
 	TelemetryMessagePacketType
 	DXSpotPacketType
 	ExperimentalPacketType
+	InvalidPacketType
 )
 
 type AprsMessage struct {

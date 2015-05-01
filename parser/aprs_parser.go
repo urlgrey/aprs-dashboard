@@ -7,7 +7,9 @@ package parser
 
 // type is a reserved keyword
 fap_packet_type_t getPacketType(fap_packet_t* p) {
-        return *p->type;
+		if (!p) return -1;
+        if (p->type != NULL) return *p->type;
+        return -1;
 }
 */
 import "C"
@@ -86,6 +88,8 @@ func (p *AprsParser) ParseAprsPacket(rawPacket string, isAX25 bool) (message *mo
 		parsedMsg.PacketType = DXSpotPacketType
 	case C.fapEXPERIMENTAL:
 		parsedMsg.PacketType = ExperimentalPacketType
+	default:
+		parsedMsg.PacketType = InvalidPacketType
 	}
 
 	if packet.latitude != nil && packet.longitude != nil {
