@@ -22,7 +22,7 @@ dependencies:
     - docker run --name disque -p 7711:7711 -d quay.io/skidder/disque:latest
     - cd ${HOME}
     - mkdir deb_cache
-    - cd db_cache
+    - cd deb_cache
     - if [ ! -e libfap-dev_1.3_amd64.deb ]; then  wget http://www.pakettiradio.net/downloads/libfap/1.3/deb_amd64/libfap-dev_1.3_amd64.deb; fi
     - if [ ! -e libfap5_1.3_amd64.deb ]; then  wget http://www.pakettiradio.net/downloads/libfap/1.3/deb_amd64/libfap5_1.3_amd64.deb; fi
     - sudo dpkg -i libfap-dev_1.3_amd64.deb libfap5_1.3_amd64.deb
