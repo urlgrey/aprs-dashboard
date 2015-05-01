@@ -63,33 +63,33 @@ func (p *AprsParser) ParseAprsPacket(rawPacket string, isAX25 bool) (message *mo
 
 	switch C.getPacketType(packet) {
 	case C.fapLOCATION:
-		parsedMsg.PacketType = LocationPacketType
+		message.PacketType = models.LocationPacketType
 	case C.fapOBJECT:
-		parsedMsg.PacketType = ObjectPacketType
+		message.PacketType = models.ObjectPacketType
 	case C.fapITEM:
-		parsedMsg.PacketType = ItemPacketType
+		message.PacketType = models.ItemPacketType
 	case C.fapMICE:
-		parsedMsg.PacketType = MicePacketType
+		message.PacketType = models.MicePacketType
 	case C.fapNMEA:
-		parsedMsg.PacketType = NMEAPacketType
+		message.PacketType = models.NMEAPacketType
 	case C.fapWX:
-		parsedMsg.PacketType = WXPacketType
+		message.PacketType = models.WXPacketType
 	case C.fapMESSAGE:
-		parsedMsg.PacketType = MessagePacketType
+		message.PacketType = models.MessagePacketType
 	case C.fapCAPABILITIES:
-		parsedMsg.PacketType = CapabilitiesPacketType
+		message.PacketType = models.CapabilitiesPacketType
 	case C.fapSTATUS:
-		parsedMsg.PacketType = StatusPacketType
+		message.PacketType = models.StatusPacketType
 	case C.fapTELEMETRY:
-		parsedMsg.PacketType = TelemetryPacketType
+		message.PacketType = models.TelemetryPacketType
 	case C.fapTELEMETRY_MESSAGE:
-		parsedMsg.PacketType = TelemetryMessagePacketType
+		message.PacketType = models.TelemetryMessagePacketType
 	case C.fapDX_SPOT:
-		parsedMsg.PacketType = DXSpotPacketType
+		message.PacketType = models.DXSpotPacketType
 	case C.fapEXPERIMENTAL:
-		parsedMsg.PacketType = ExperimentalPacketType
+		message.PacketType = models.ExperimentalPacketType
 	default:
-		parsedMsg.PacketType = InvalidPacketType
+		message.PacketType = models.InvalidPacketType
 	}
 
 	if packet.latitude != nil && packet.longitude != nil {
