@@ -5,8 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"os"
-	"strings"
+	"time"
 
 	"github.com/gorilla/mux"
 	"github.com/mholt/binding"
@@ -17,7 +16,7 @@ import (
 
 type MessageHandler struct {
 	parser *parser.AprsParser
-	disque disque.Disque
+	pool   *disque.DisquePool
 }
 
 func InitializeRouterForMessageHandlers(r *mux.Router, parser *parser.AprsParser) {
@@ -28,15 +27,14 @@ func InitializeRouterForMessageHandlers(r *mux.Router, parser *parser.AprsParser
 }
 
 func (m *MessageHandler) Initialize() (err error) {
-	disqueHostsEnv := os.Getenv("DISQUE_HOSTS")
-	var disqueHosts []string
-	if disqueHostsEnv == "" {
-		disqueHosts = []string{"127.0.0.1:7711"}
-	} else {
-		disqueHosts = strings.Split(disqueHostsEnv, ",")
-	}
-	d := disque.NewDisque(disqueHosts, 1000)
-	return d.Initialize()
+	hosts := []string{"127.0.0.1:7711"} // array of 1 or more Disque servers
+	cycle := 1000                       // check connection stats every 1000 Fetch's
+	capacity := 10                      // initial capacity of the pool
+	maxCapacity := 10                   // max capacity that the pool can be resized to
+	idleTimeout := 15 * time.Minute     // timeout for idle connections
+	m.pool = disque.NewDisquePool(hosts, cycle, capacity, maxCapacity, idleTimeout)
+
+	return nil
 }
 
 func (m *MessageHandler) SubmitAPRSMessage(resp http.ResponseWriter, req *http.Request) {
@@ -64,13 +62,24 @@ func (m *MessageHandler) SubmitAPRSMessage(resp http.ResponseWriter, req *http.R
 		return
 	}
 
-	if err = m.disque.Push("aprs_messages", string(aprsMessageJson), 100); err != nil {
+	var conn *disque.Disque
+	if conn, err = m.pool.Get(); err != nil {
+		log.Printf("Error while getting connection from pool: %s", err)
+		http.Error(resp,
+			"Error queueing APRS message for asynchronous handling",
+			http.StatusInternalServerError)
+		return
+	}
+
+	if err = conn.Push("aprs_messages", string(aprsMessageJson), 100); err != nil {
+		m.pool.Put(conn)
 		log.Printf("Error while enqueueing APRS message for asynchronous handling: %s", err)
 		http.Error(resp,
 			"Error queueing APRS message for asynchronous handling",
 			http.StatusInternalServerError)
 		return
 	}
+	m.pool.Put(conn)
 
 	resp.Header().Set("Content-Type", "application/json")
 	responseEncoder := json.NewEncoder(resp)

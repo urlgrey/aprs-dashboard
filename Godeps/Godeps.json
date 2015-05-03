@@ -19,6 +19,10 @@
 			"Rev": "535138d7bcd717d6531c701ef5933d98b1866257"
 		},
 		{
+			"ImportPath": "github.com/golang/glog",
+			"Rev": "44145f04b68cf362d9c4df2182967c2275eaefed"
+		},
+		{
 			"ImportPath": "github.com/gorilla/context",
 			"Rev": "215affda49addc4c8ef7e2534915df2c8c35c6cd"
 		},
@@ -31,17 +35,33 @@
 			"Rev": "6c082304f300fc70793cb0be18af0fdd4acd2b75"
 		},
 		{
-			"ImportPath": "github.com/stretchr/testify/assert",
-			"Rev": "e22aedd37671fb115be6c0c25129c405cb575cfd"
-		},
-		{
 			"ImportPath": "github.com/urlgrey/golang-set",
 			"Comment": "v1-25-g154bd31",
 			"Rev": "154bd3129f0f6dae91c0ef77f381693d8db0fa6b"
 		},
 		{
+			"ImportPath": "github.com/youtube/vitess/go/acl",
+			"Rev": "71ea23e7fd3619357903194ba3f25e860ed52751"
+		},
+		{
+			"ImportPath": "github.com/youtube/vitess/go/cache",
+			"Rev": "71ea23e7fd3619357903194ba3f25e860ed52751"
+		},
+		{
+			"ImportPath": "github.com/youtube/vitess/go/pools",
+			"Rev": "71ea23e7fd3619357903194ba3f25e860ed52751"
+		},
+		{
+			"ImportPath": "github.com/youtube/vitess/go/sync2",
+			"Rev": "71ea23e7fd3619357903194ba3f25e860ed52751"
+		},
+		{
 			"ImportPath": "github.com/zencoder/disque-go/disque",
-			"Rev": "781ca5da4dcc4758a19dd76a4c958cab66372cf8"
+			"Rev": "dc506eeb201babb875af8b54a3d2511c495cbcec"
+		},
+		{
+			"ImportPath": "golang.org/x/net/context",
+			"Rev": "a8c61998a557a37435f719980da368469c10bfed"
 		}
 	]
 }

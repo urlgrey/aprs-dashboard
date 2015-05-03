@@ -4,6 +4,7 @@ import (
 	"errors"
 	"log"
 	"strings"
+	"time"
 
 	"github.com/garyburd/redigo/redis"
 )
@@ -44,17 +45,17 @@ func (d *Disque) Initialize() (err error) {
 }
 
 // Close the main connection maintained by this Disque instance
-func (d *Disque) Close() error {
-	return d.client.Close()
+func (d *Disque) Close() {
+	d.client.Close()
 }
 
 // Push job onto a Disque queue with the default set of options
-func (d *Disque) Push(queueName string, job string, timeout int64) (err error) {
-	if _, err = d.client.Do("ADDJOB", queueName, job, timeout); err != nil {
-		if err = d.explore(); err == nil {
-			_, err = d.client.Do("ADDJOB", queueName, job, timeout)
-		}
-	}
+func (d *Disque) Push(queueName string, job string, timeout time.Duration) (err error) {
+	args := redis.Args{}.
+		Add(queueName).
+		Add(job).
+		Add(int64(timeout.Seconds() * 1000))
+	_, err = d.call("ADDJOB", args)
 	return
 }
 
@@ -72,46 +73,48 @@ func (d *Disque) Push(queueName string, job string, timeout int64) (err error) {
 //     options := make(map[string]string)
 //     options["DELAY"] = 30
 //     options["ASYNC"] = true
-//     d.PushWithOptions("queue_name", "job", 0, options)
-func (d *Disque) PushWithOptions(queueName string, job string, timeout int64, options map[string]string) (err error) {
+//     d.PushWithOptions("queue_name", "job", 1*time.Second, options)
+func (d *Disque) PushWithOptions(queueName string, job string, timeout time.Duration, options map[string]string) (err error) {
 	if len(options) == 0 {
 		err = d.Push(queueName, job, timeout)
 	} else {
-		args := redis.Args{}.Add(queueName).Add(job).Add(timeout).AddFlat(optionsToArguments(options))
-		if _, err = d.client.Do("ADDJOB", args...); err != nil {
-			if err = d.explore(); err == nil {
-				_, err = d.client.Do("ADDJOB", args...)
-			}
-		}
+		args := redis.Args{}.
+			Add(queueName).
+			Add(job).
+			Add(int64(timeout.Seconds() * 1000)).
+			AddFlat(optionsToArguments(options))
+		_, err = d.call("ADDJOB", args)
 	}
 	return
 }
 
 // Acknowledge receipt and processing of a message
 func (d *Disque) Ack(messageId string) (err error) {
-	if _, err = d.client.Do("ACKJOB", messageId); err != nil {
-		if err = d.explore(); err == nil {
-			_, err = d.client.Do("ACKJOB", messageId)
-		}
-	}
+	_, err = d.call("ACKJOB", redis.Args{}.Add(messageId))
 	return
 }
 
 // Retrieve length of queue
 func (d *Disque) QueueLength(queueName string) (queueLength int, err error) {
-	if queueLength, err = redis.Int(d.client.Do("QLEN", queueName)); err != nil {
-		if err = d.explore(); err == nil {
-			queueLength, err = redis.Int(d.client.Do("QLEN", queueName))
+	return redis.Int(d.call("QLEN", redis.Args{}.Add(queueName)))
+}
+
+// Fetch a single job from a Disque queue.
+func (d *Disque) Fetch(queueName string, timeout time.Duration) (job *Job, err error) {
+	var jobs []*Job
+	if jobs, err = d.FetchMultiple(queueName, 1, timeout); err == nil {
+		if len(jobs) > 0 {
+			job = jobs[0]
 		}
 	}
 	return
 }
 
 // Fetch jobs from a Disque queue.
-func (d *Disque) Fetch(queueName string, count int, timeout int64) (jobs []*Job, err error) {
+func (d *Disque) FetchMultiple(queueName string, count int, timeout time.Duration) (jobs []*Job, err error) {
 	jobs = make([]*Job, 0)
 	if err = d.pickClient(); err == nil {
-		if values, err := redis.Values(d.client.Do("GETJOB", "TIMEOUT", timeout, "COUNT", count, "FROM", queueName)); err == nil {
+		if values, err := redis.Values(d.client.Do("GETJOB", "TIMEOUT", int64(timeout.Seconds()*1000), "COUNT", count, "FROM", queueName)); err == nil {
 			for _, job := range values {
 				if jobValues, err := redis.Strings(job, err); err == nil {
 					jobs = append(jobs, &Job{QueueName: jobValues[0], MessageId: jobValues[1], Message: jobValues[2]})
@@ -124,6 +127,15 @@ func (d *Disque) Fetch(queueName string, count int, timeout int64) (jobs []*Job,
 		}
 	}
 	return jobs, err
+}
+
+func (d *Disque) call(command string, args redis.Args) (reply interface{}, err error) {
+	if reply, err = d.client.Do(command, args...); err != nil {
+		if err = d.explore(); err == nil {
+			reply, err = d.client.Do(command, args...)
+		}
+	}
+	return
 }
 
 func optionsToArguments(options map[string]string) (arguments []string) {
@@ -148,6 +160,11 @@ func (d *Disque) pickClient() (err error) {
 			if optimalHostId != d.prefix {
 				// a different optimal host has been discovered
 				if val, ok := d.nodes[optimalHostId]; ok {
+					// close old main client connection if it exists
+					if d.client != nil {
+						d.client.Close()
+					}
+
 					// configure main client
 					if d.client, err = redis.Dial("tcp", d.nodes[optimalHostId]); err == nil {
 						// keep track of selected node
@@ -184,6 +201,11 @@ func (d *Disque) explore() (err error) {
 						prefix := id[0:8]
 
 						if flag == "myself" {
+							// close main client if it exists
+							if d.client != nil {
+								d.client.Close()
+							}
+
 							// configure main client
 							if d.client, err = redis.Dial("tcp", host); err == nil {
 								// keep track of selected node
