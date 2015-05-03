@@ -19,7 +19,7 @@ dependencies:
     - cd ${HOME}
     - wget https://raw.githubusercontent.com/urlgrey/docker-dynamic-redis/master/redis.conf
     - docker run --name db -p 7379:6379 -d -v `pwd`/redis.conf:/usr/local/etc/redis/redis.conf urlgrey/dynamic-redis:latest redis-server /usr/local/etc/redis/redis.conf
-    - docker run --name disque -p 7711:7711 -d quay.io/skidder/disque:latest
+    - docker run --name queue -p 7711:7711 -d quay.io/skidder/disque:latest
     - cd ${HOME}
     - mkdir deb_cache
     - cd deb_cache
@@ -30,7 +30,7 @@ test:
   override:
     - cd ~/.go_workspace/src/github.com/urlgrey/aprs-dashboard && make all docker-build
   post:
-    - docker run -d --link db:db --link disque:disque -p 3000:3000 urlgrey/aprs-dashboard:latest; sleep 5
+    - docker run -d --link db:db --link queue:queue -p 3000:3000 urlgrey/aprs-dashboard:latest; sleep 5
     - curl --retry 10 --retry-delay 5 -v http://localhost:3000/
 deployment:
   automerge:
