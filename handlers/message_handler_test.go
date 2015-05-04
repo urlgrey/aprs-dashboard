@@ -3,7 +3,6 @@ package handlers
 import (
 	"net/http"
 	"net/http/httptest"
-	"os"
 	"strings"
 	"testing"
 
