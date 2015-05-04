@@ -3,6 +3,7 @@ machine:
     - docker
   environment:
     DB_PORT: "tcp://127.0.0.1:7379"
+    QUEUE_PORT: "tcp://127.0.0.1:7711"
 checkout:
   post:
     - rm -rf ~/.go_workspace/src/github.com/urlgrey
