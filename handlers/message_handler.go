@@ -48,6 +48,7 @@ func (m *MessageHandler) SubmitAPRSMessage(resp http.ResponseWriter, req *http.R
 	message := new(models.RawAprsPacket)
 	errs := binding.Bind(req, message)
 	if errs.Handle(resp) {
+		log.Printf("Error while binding request to model: %s", errs.Error())
 		return
 	}
 
