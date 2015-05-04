@@ -10,7 +10,6 @@ checkout:
     - mkdir -p ~/.go_workspace/src/github.com/urlgrey
     - cp -R ~/aprs-dashboard ~/.go_workspace/src/github.com/urlgrey/aprs-dashboard
 dependencies:
-dependencies:
   cache_directories:
     - "~/deb_cache"
   override:
@@ -24,8 +23,8 @@ dependencies:
     - cd ${HOME}
     - mkdir deb_cache
     - cd deb_cache
-    - if [ ! -e libfap-dev_1.3_amd64.deb ]; then  wget http://www.pakettiradio.net/downloads/libfap/1.3/deb_amd64/libfap-dev_1.3_amd64.deb; fi
-    - if [ ! -e libfap5_1.3_amd64.deb ]; then  wget http://www.pakettiradio.net/downloads/libfap/1.3/deb_amd64/libfap5_1.3_amd64.deb; fi
+    - if [ ! -e ${HOME}/deb_cache/libfap-dev_1.3_amd64.deb ]; then  wget http://www.pakettiradio.net/downloads/libfap/1.3/deb_amd64/libfap-dev_1.3_amd64.deb; fi
+    - if [ ! -e ${HOME}/deb_cache/libfap5_1.3_amd64.deb ]; then  wget http://www.pakettiradio.net/downloads/libfap/1.3/deb_amd64/libfap5_1.3_amd64.deb; fi
     - sudo dpkg -i libfap-dev_1.3_amd64.deb libfap5_1.3_amd64.deb
 test:
   override:
