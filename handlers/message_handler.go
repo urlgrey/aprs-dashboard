@@ -5,9 +5,6 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"os"
-	"strings"
-	"time"
 
 	"github.com/gorilla/mux"
 	"github.com/mholt/binding"
@@ -21,27 +18,10 @@ type MessageHandler struct {
 	pool   *disque.DisquePool
 }
 
-func InitializeRouterForMessageHandlers(r *mux.Router, parser *parser.AprsParser) {
-	m := MessageHandler{parser: parser}
-	m.Initialize()
+func InitializeRouterForMessageHandlers(r *mux.Router, parser *parser.AprsParser, pool *disque.DisquePool) {
+	m := MessageHandler{parser: parser, pool: pool}
 
 	r.HandleFunc("/api/v1/message", m.SubmitAPRSMessage).Methods("PUT")
-}
-
-func (m *MessageHandler) Initialize() (err error) {
-	queueServer := strings.TrimLeft(os.Getenv("QUEUE_PORT"), "tcp://")
-	if queueServer == "" {
-		log.Fatal("QUEUE_PORT environment variable is not set, but is required, exiting")
-	}
-
-	hosts := []string{queueServer}  // array of 1 or more Disque servers
-	cycle := 1000                   // check connection stats every 1000 Fetch's
-	capacity := 10                  // initial capacity of the pool
-	maxCapacity := 10               // max capacity that the pool can be resized to
-	idleTimeout := 15 * time.Minute // timeout for idle connections
-	m.pool = disque.NewDisquePool(hosts, cycle, capacity, maxCapacity, idleTimeout)
-
-	return nil
 }
 
 func (m *MessageHandler) SubmitAPRSMessage(resp http.ResponseWriter, req *http.Request) {
