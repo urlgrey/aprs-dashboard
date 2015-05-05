@@ -5,22 +5,28 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"time"
 
 	"github.com/gorilla/mux"
 	"github.com/mholt/binding"
 	"github.com/urlgrey/aprs-dashboard/models"
 	"github.com/urlgrey/aprs-dashboard/parser"
 	"github.com/zencoder/disque-go/disque"
+	"golang.org/x/net/context"
 )
 
 type MessageHandler struct {
-	parser *parser.AprsParser
-	pool   *disque.DisquePool
+	parser      *parser.AprsParser
+	pool        *disque.DisquePool
+	PoolTimeout time.Duration
+}
+
+func NewMessageHandler(parser *parser.AprsParser, pool *disque.DisquePool) *MessageHandler {
+	return &MessageHandler{parser: parser, pool: pool, PoolTimeout: 5 * time.Second}
 }
 
 func InitializeRouterForMessageHandlers(r *mux.Router, parser *parser.AprsParser, pool *disque.DisquePool) {
-	m := MessageHandler{parser: parser, pool: pool}
-
+	m := NewMessageHandler(parser, pool)
 	r.HandleFunc("/api/v1/message", m.SubmitAPRSMessage).Methods("PUT")
 }
 
@@ -51,7 +57,9 @@ func (m *MessageHandler) SubmitAPRSMessage(resp http.ResponseWriter, req *http.R
 	}
 
 	var conn *disque.Disque
-	if conn, err = m.pool.Get(); err != nil {
+	ctx := context.Background()
+	context.WithTimeout(ctx, m.PoolTimeout)
+	if conn, err = m.pool.Get(ctx); err != nil {
 		log.Printf("Error while getting connection from pool: %s", err)
 		http.Error(resp,
 			"Error queueing APRS message for asynchronous handling",

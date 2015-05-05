@@ -19,7 +19,7 @@ func TestHandleMessageWithMalformedJSON(t *testing.T) {
 	defer aprsParser.Close()
 	pool := createDisquePool("127.0.0.1:7711")
 	defer pool.Close()
-	h := MessageHandler{parser: aprsParser, pool: pool}
+	h := NewMessageHandler(aprsParser, pool)
 
 	r, _ := http.NewRequest("PUT", "/api/v1/message", strings.NewReader("asdf"))
 	r.Header.Add("Accept", "application/json")
@@ -37,7 +37,7 @@ func TestHandleMessageWithDisqueUnreachable(t *testing.T) {
 	defer aprsParser.Close()
 	pool := createDisquePool("127.0.0.1:8811")
 	defer pool.Close()
-	h := MessageHandler{parser: aprsParser, pool: pool}
+	h := NewMessageHandler(aprsParser, pool)
 
 	r, _ := http.NewRequest("PUT", "/api/v1/message", strings.NewReader("{\"data\":\"K7SSW>APRS,TCPXX*,qAX,CWOP-5:@100235z4743.22N/12222.41W_135/000g000t047r004p009P008h95b10132lOww_0.86.5\", \"is_ax25\":false}"))
 	r.Header.Add("Content-Type", "application/json")
@@ -55,7 +55,7 @@ func TestHandleMessageWithUnparsableAPRSPacket(t *testing.T) {
 	defer aprsParser.Close()
 	pool := createDisquePool("127.0.0.1:7711")
 	defer pool.Close()
-	h := MessageHandler{parser: aprsParser, pool: pool}
+	h := NewMessageHandler(aprsParser, pool)
 
 	r, _ := http.NewRequest("PUT", "/api/v1/message", strings.NewReader("{\"data\":\"foo\", \"is_ax25\":false}"))
 	r.Header.Add("Content-Type", "application/json")
@@ -73,7 +73,7 @@ func TestHandleMessage(t *testing.T) {
 	defer aprsParser.Close()
 	pool := createDisquePool("127.0.0.1:7711")
 	defer pool.Close()
-	h := MessageHandler{parser: aprsParser, pool: pool}
+	h := NewMessageHandler(aprsParser, pool)
 
 	r, _ := http.NewRequest("PUT", "/api/v1/message", strings.NewReader("{\"data\":\"K7SSW>APRS,TCPXX*,qAX,CWOP-5:@100235z4743.22N/12222.41W_135/000g000t047r004p009P008h95b10132lOww_0.86.5\", \"is_ax25\":false}"))
 	r.Header.Add("Content-Type", "application/json")
@@ -91,7 +91,7 @@ func BenchmarkHandleMessage(b *testing.B) {
 	defer aprsParser.Close()
 	pool := createDisquePool("127.0.0.1:7711")
 	defer pool.Close()
-	h := MessageHandler{parser: aprsParser, pool: pool}
+	h := NewMessageHandler(aprsParser, pool)
 
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {

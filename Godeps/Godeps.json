@@ -45,23 +45,23 @@
 		},
 		{
 			"ImportPath": "github.com/youtube/vitess/go/acl",
-			"Rev": "71ea23e7fd3619357903194ba3f25e860ed52751"
+			"Rev": "34d0e6afdf258a2c68204bc5576a4054d6e3ad55"
 		},
 		{
 			"ImportPath": "github.com/youtube/vitess/go/cache",
-			"Rev": "71ea23e7fd3619357903194ba3f25e860ed52751"
+			"Rev": "34d0e6afdf258a2c68204bc5576a4054d6e3ad55"
 		},
 		{
 			"ImportPath": "github.com/youtube/vitess/go/pools",
-			"Rev": "71ea23e7fd3619357903194ba3f25e860ed52751"
+			"Rev": "34d0e6afdf258a2c68204bc5576a4054d6e3ad55"
 		},
 		{
 			"ImportPath": "github.com/youtube/vitess/go/sync2",
-			"Rev": "71ea23e7fd3619357903194ba3f25e860ed52751"
+			"Rev": "34d0e6afdf258a2c68204bc5576a4054d6e3ad55"
 		},
 		{
 			"ImportPath": "github.com/zencoder/disque-go/disque",
-			"Rev": "dc506eeb201babb875af8b54a3d2511c495cbcec"
+			"Rev": "da208555e48eec9eab5fab081bec8f3688a41766"
 		},
 		{
 			"ImportPath": "golang.org/x/net/context",
