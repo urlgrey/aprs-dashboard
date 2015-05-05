@@ -16,10 +16,10 @@ import (
 )
 
 func main() {
-	n := negroni.New()
+	mainServer := negroni.New()
 
-	n.Use(negroni.NewStatic(http.Dir("assets")))
-	n.Use(negroni.HandlerFunc(handlers.TokenVerificationMiddleware))
+	mainServer.Use(negroni.NewStatic(http.Dir("assets")))
+	mainServer.Use(negroni.HandlerFunc(handlers.TokenVerificationMiddleware))
 
 	database := db.NewDatabase()
 	defer database.Close()
@@ -31,9 +31,15 @@ func main() {
 	disquePool := createDisquePool()
 	handlers.InitializeRouterForMessageHandlers(router, aprsParser, disquePool)
 	handlers.InitializeRouterForQueryHandlers(router, database)
-	n.UseHandler(router)
+	mainServer.UseHandler(router)
 
-	n.Run(":3000")
+	mainServer.Run(":3000")
+
+	healthCheckServer := negroni.New()
+	healthCheckRouter := mux.NewRouter()
+	handlers.InitializeRouterForHealthCheckHandler(healthCheckRouter, disquePool)
+	healthCheckServer.UseHandler(healthCheckRouter)
+	healthCheckServer.Run(":3001")
 }
 
 func createDisquePool() (pool *disque.DisquePool) {

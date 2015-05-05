@@ -33,5 +33,6 @@ COPY docker-entrypoint.sh /entrypoint.sh
 COPY bin/aprs-dashboard /aprs-dashboard
 ENTRYPOINT ["/entrypoint.sh"]
 
-EXPOSE 6379
+EXPOSE 3000
+EXPOSE 3001
 CMD ["/aprs-dashboard"]
