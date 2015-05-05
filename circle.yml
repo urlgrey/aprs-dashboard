@@ -30,8 +30,8 @@ test:
   override:
     - cd ~/.go_workspace/src/github.com/urlgrey/aprs-dashboard && make all docker-build
   post:
-    - docker run -d --link db:db --link queue:queue -p 3000:3000 -p 3001:3001 urlgrey/aprs-dashboard:latest; sleep 5
-    - curl --retry 10 --retry-delay 5 -v http://localhost:3001/
+    - docker run -d --link db:db --link queue:queue -p 3000:3000 -p 3100:3100 urlgrey/aprs-dashboard:latest; sleep 5
+    - curl --retry 10 --retry-delay 5 -v http://localhost:3100/
 deployment:
   automerge:
     branch: [master]

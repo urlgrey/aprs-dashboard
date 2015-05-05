@@ -19,7 +19,9 @@ func main() {
 	mainServer := negroni.New()
 
 	mainServer.Use(negroni.NewStatic(http.Dir("assets")))
-	mainServer.Use(negroni.HandlerFunc(handlers.TokenVerificationMiddleware))
+	tokenVerification := handlers.NewTokenVerificationMiddleware()
+	tokenVerification.Initialize()
+	mainServer.Use(negroni.HandlerFunc(tokenVerification.Run))
 
 	database := db.NewDatabase()
 	defer database.Close()

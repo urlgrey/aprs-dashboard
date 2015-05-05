@@ -34,5 +34,5 @@ COPY bin/aprs-dashboard /aprs-dashboard
 ENTRYPOINT ["/entrypoint.sh"]
 
 EXPOSE 3000
-EXPOSE 3001
+EXPOSE 3100
 CMD ["/aprs-dashboard"]
