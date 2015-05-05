@@ -35,8 +35,7 @@ func (h *HealthCheckHandler) HealthCheck(resp http.ResponseWriter, req *http.Req
 	}
 	defer h.pool.Put(c)
 
-	var length int
-	if length, err = c.QueueLength("queueName"); err != nil {
+	if _, err = c.QueueLength("queueName"); err != nil {
 		http.Error(resp,
 			fmt.Sprintf("Error querying Disque for queue length %+v", err),
 			http.StatusInternalServerError)
