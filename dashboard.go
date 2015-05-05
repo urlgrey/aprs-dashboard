@@ -33,13 +33,13 @@ func main() {
 	handlers.InitializeRouterForQueryHandlers(router, database)
 	mainServer.UseHandler(router)
 
-	mainServer.Run(":3000")
+	go mainServer.Run(":3000")
 
 	healthCheckServer := negroni.New()
 	healthCheckRouter := mux.NewRouter()
 	handlers.InitializeRouterForHealthCheckHandler(healthCheckRouter, disquePool)
 	healthCheckServer.UseHandler(healthCheckRouter)
-	healthCheckServer.Run(":3001")
+	healthCheckServer.Run(":3100")
 }
 
 func createDisquePool() (pool *disque.DisquePool) {

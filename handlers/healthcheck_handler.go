@@ -3,6 +3,7 @@ package handlers
 import (
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/gorilla/mux"
 	"github.com/zencoder/disque-go/disque"
@@ -27,9 +28,11 @@ func InitializeRouterForHealthCheckHandler(r *mux.Router, pool *disque.DisquePoo
 func (h *HealthCheckHandler) HealthCheck(resp http.ResponseWriter, req *http.Request) {
 	var c *disque.Disque
 	var err error
-	if c, err = h.pool.Get(context.Background()); err != nil {
+	ctx := context.Background()
+	context.WithTimeout(ctx, 5*time.Second)
+	if c, err = h.pool.Get(ctx); err != nil {
 		http.Error(resp,
-			fmt.Sprintf("Error getting Disque connection %+v", err),
+			fmt.Sprintf("{\"error\": \"Error getting Disque connection %+v\"}", err),
 			http.StatusInternalServerError)
 		return
 	}
@@ -37,7 +40,7 @@ func (h *HealthCheckHandler) HealthCheck(resp http.ResponseWriter, req *http.Req
 
 	if _, err = c.QueueLength("queueName"); err != nil {
 		http.Error(resp,
-			fmt.Sprintf("Error querying Disque for queue length %+v", err),
+			fmt.Sprintf("{\"error\": \"Error querying Disque for queue length %+v\"}", err),
 			http.StatusInternalServerError)
 		return
 	}
