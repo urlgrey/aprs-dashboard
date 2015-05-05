@@ -159,8 +159,10 @@ func (s *DisqueSuite) TestPushWithEmptyOptions() {
 	d.Initialize()
 	options := make(map[string]string)
 
-	err := d.PushWithOptions("queue1", "asdf", 1*time.Second, options)
+	jobId, err := d.PushWithOptions("queue1", "asdf", time.Second, options)
 
+	assert.NotNil(s.T(), jobId)
+	assert.NotEqual(s.T(), "", jobId)
 	assert.Nil(s.T(), err)
 }
 
@@ -172,8 +174,10 @@ func (s *DisqueSuite) TestPushWithOptions() {
 	options["TTL"] = "60"
 	options["ASYNC"] = "true"
 
-	err := d.PushWithOptions("queue1", "asdf", 1*time.Second, options)
+	jobId, err := d.PushWithOptions("queue1", "asdf", time.Second, options)
 
+	assert.NotNil(s.T(), jobId)
+	assert.NotEqual(s.T(), "", jobId)
 	assert.Nil(s.T(), err)
 }
 
@@ -186,9 +190,68 @@ func (s *DisqueSuite) TestPushWithOptionsOnClosedConnection() {
 	options["TTL"] = "60"
 	options["ASYNC"] = "true"
 
-	err := d.PushWithOptions("queue1", "asdf", 1*time.Second, options)
+	// should explore Disque cluster again, reconnecting automatically
+	jobId, err := d.PushWithOptions("queue1", "asdf", time.Second, options)
 
+	assert.NotNil(s.T(), jobId)
+	assert.NotEqual(s.T(), "", jobId)
 	assert.Nil(s.T(), err)
+}
+
+func (s *DisqueSuite) TestGetJobDetailsWithInvalidJobId() {
+	hosts := []string{"127.0.0.1:7711"}
+	d := NewDisque(hosts, 1000)
+	d.Initialize()
+
+	jobDetails, err := d.GetJobDetails("asdfasdfasdfbogus")
+	assert.NotNil(s.T(), err)
+	assert.Nil(s.T(), jobDetails)
+}
+
+func (s *DisqueSuite) TestGetJobDetailsWithAckdJobId() {
+	hosts := []string{"127.0.0.1:7711"}
+	d := NewDisque(hosts, 1000)
+	d.Initialize()
+
+	jobId, err := d.Push("queue5000", "asdf", time.Second)
+
+	var jobDetails *JobDetails
+	jobDetails, err = d.GetJobDetails(jobId)
+	assert.NotNil(s.T(), jobDetails)
+	assert.Nil(s.T(), err)
+
+	var job *Job
+	job, err = d.Fetch("queue5000", time.Second)
+	assert.Equal(s.T(), jobId, job.JobId)
+	assert.NotNil(s.T(), job)
+	assert.Nil(s.T(), err)
+	d.Ack(job.JobId)
+
+	jobDetails, err = d.GetJobDetails(job.JobId)
+	assert.NotNil(s.T(), err)
+	assert.Nil(s.T(), jobDetails)
+}
+
+func (s *DisqueSuite) TestGetJobDetails() {
+	hosts := []string{"127.0.0.1:7711"}
+	d := NewDisque(hosts, 1000)
+	d.Initialize()
+
+	jobId, err := d.Push("queue1", "asdf", time.Second)
+
+	assert.NotNil(s.T(), jobId)
+	assert.NotEqual(s.T(), "", jobId)
+	assert.Nil(s.T(), err)
+
+	var jobDetails *JobDetails
+	jobDetails, err = d.GetJobDetails(jobId)
+	assert.Nil(s.T(), err)
+	assert.NotNil(s.T(), jobDetails)
+
+	assert.NotNil(s.T(), jobDetails.CreatedAt)
+	assert.True(s.T(), time.Now().After(jobDetails.CreatedAt))
+	assert.Equal(s.T(), "asdf", jobDetails.Message)
+	assert.Equal(s.T(), jobId, jobDetails.JobId)
 }
 
 func (s *DisqueSuite) TestPush() {
@@ -196,8 +259,10 @@ func (s *DisqueSuite) TestPush() {
 	d := NewDisque(hosts, 1000)
 	d.Initialize()
 
-	err := d.Push("queue1", "asdf", 1*time.Second)
+	jobId, err := d.Push("queue1", "asdf", time.Second)
 
+	assert.NotNil(s.T(), jobId)
+	assert.NotEqual(s.T(), "", jobId)
 	assert.Nil(s.T(), err)
 }
 
@@ -207,7 +272,7 @@ func (s *DisqueSuite) TestPushToClosedConnection() {
 	d.Initialize()
 	d.Close()
 
-	err := d.Push("queue1", "asdf", 1*time.Second)
+	_, err := d.Push("queue1", "asdf", time.Second)
 
 	assert.Nil(s.T(), err)
 }
@@ -219,7 +284,7 @@ func (s *DisqueSuite) TestPushToUnreachableNode() {
 	d.Close()
 	d.servers = []string{"127.0.0.1:7722"}
 
-	err := d.Push("queue1", "asdf", 1*time.Second)
+	_, err := d.Push("queue1", "asdf", time.Second)
 
 	assert.NotNil(s.T(), err)
 }
@@ -228,7 +293,7 @@ func (s *DisqueSuite) TestQueueLength() {
 	hosts := []string{"127.0.0.1:7711"}
 	d := NewDisque(hosts, 1000)
 	d.Initialize()
-	err := d.Push("queue3", "asdf", 1*time.Second)
+	_, err := d.Push("queue3", "asdf", time.Second)
 	assert.Nil(s.T(), err)
 	assert.Equal(s.T(), 0, d.stats[d.prefix])
 
@@ -238,15 +303,15 @@ func (s *DisqueSuite) TestQueueLength() {
 	assert.Equal(s.T(), 1, queueLength)
 
 	var job *Job
-	job, err = d.Fetch("queue3", 1*time.Second)
-	err = d.Ack(job.MessageId)
+	job, err = d.Fetch("queue3", time.Second)
+	err = d.Ack(job.JobId)
 }
 
 func (s *DisqueSuite) TestQueueLengthOnClosedConnection() {
 	hosts := []string{"127.0.0.1:7711"}
 	d := NewDisque(hosts, 1000)
 	d.Initialize()
-	err := d.Push("queue3", "asdf", 1*time.Second)
+	_, err := d.Push("queue3", "asdf", time.Second)
 	assert.Nil(s.T(), err)
 	assert.Equal(s.T(), 0, d.stats[d.prefix])
 	d.Close()
@@ -257,24 +322,24 @@ func (s *DisqueSuite) TestQueueLengthOnClosedConnection() {
 	assert.Equal(s.T(), 1, queueLength)
 
 	var job *Job
-	job, err = d.Fetch("queue3", 1*time.Second)
-	err = d.Ack(job.MessageId)
+	job, err = d.Fetch("queue3", time.Second)
+	err = d.Ack(job.JobId)
 }
 
 func (s *DisqueSuite) TestFetch() {
 	hosts := []string{"127.0.0.1:7711"}
 	d := NewDisque(hosts, 1000)
 	d.Initialize()
-	err := d.Push("queue4", "asdf", 1*time.Second)
+	_, err := d.Push("queue4", "asdf", time.Second)
 	assert.Nil(s.T(), err)
 	assert.Equal(s.T(), 0, d.stats[d.prefix])
 
-	job, err := d.Fetch("queue4", 1*time.Second)
+	job, err := d.Fetch("queue4", time.Second)
 	assert.Nil(s.T(), err)
 	assert.NotNil(s.T(), job)
 	assert.Equal(s.T(), "queue4", job.QueueName)
 	assert.Equal(s.T(), "asdf", job.Message)
-	assert.Equal(s.T(), job.MessageId[2:10], d.prefix)
+	assert.Equal(s.T(), job.JobId[2:10], d.prefix)
 	assert.Equal(s.T(), 1, d.stats[d.prefix])
 }
 
@@ -282,11 +347,11 @@ func (s *DisqueSuite) TestFetchWithNoJobs() {
 	hosts := []string{"127.0.0.1:7711"}
 	d := NewDisque(hosts, 1000)
 	d.Initialize()
-	err := d.Push("queue4", "asdf", 1*time.Second)
+	_, err := d.Push("queue4", "asdf", time.Second)
 	assert.Nil(s.T(), err)
 	assert.Equal(s.T(), 0, d.stats[d.prefix])
 
-	job, err := d.Fetch("emptyqueue", 1*time.Second)
+	job, err := d.Fetch("emptyqueue", time.Second)
 	assert.Nil(s.T(), err)
 	assert.Nil(s.T(), job)
 	assert.Equal(s.T(), 0, d.stats[d.prefix])
@@ -296,15 +361,15 @@ func (s *DisqueSuite) TestFetchWithMultipleJobs() {
 	hosts := []string{"127.0.0.1:7711"}
 	d := NewDisque(hosts, 1000)
 	d.Initialize()
-	err := d.Push("queue5", "msg1", 1*time.Second)
-	err = d.Push("queue5", "msg2", 1*time.Second)
-	err = d.Push("queue5", "msg3", 1*time.Second)
+	_, err := d.Push("queue5", "msg1", time.Second)
+	_, err = d.Push("queue5", "msg2", time.Second)
+	_, err = d.Push("queue5", "msg3", time.Second)
 
-	jobs, err := d.FetchMultiple("queue5", 2, 1*time.Second)
+	jobs, err := d.FetchMultiple("queue5", 2, time.Second)
 	assert.Nil(s.T(), err)
 	assert.Equal(s.T(), 2, len(jobs))
 
-	jobs, err = d.FetchMultiple("queue5", 2, 1*time.Second)
+	jobs, err = d.FetchMultiple("queue5", 2, time.Second)
 	assert.Nil(s.T(), err)
 	assert.Equal(s.T(), 1, len(jobs))
 }
@@ -313,11 +378,11 @@ func (s *DisqueSuite) TestFetchMultipleWithNoJobs() {
 	hosts := []string{"127.0.0.1:7711"}
 	d := NewDisque(hosts, 1000)
 	d.Initialize()
-	err := d.Push("queue4", "asdf", 1*time.Second)
+	_, err := d.Push("queue4", "asdf", time.Second)
 	assert.Nil(s.T(), err)
 	assert.Equal(s.T(), 0, d.stats[d.prefix])
 
-	jobs, err := d.FetchMultiple("emptyqueue", 1, 1*time.Second)
+	jobs, err := d.FetchMultiple("emptyqueue", 1, time.Second)
 	assert.Nil(s.T(), err)
 	assert.NotNil(s.T(), jobs)
 	assert.Equal(s.T(), 0, len(jobs))
@@ -328,17 +393,17 @@ func (s *DisqueSuite) TestAck() {
 	hosts := []string{"127.0.0.1:7711"}
 	d := NewDisque(hosts, 1000)
 	d.Initialize()
-	err := d.Push("queue2", "asdf", 1*time.Second)
+	_, err := d.Push("queue2", "asdf", time.Second)
 	assert.Nil(s.T(), err)
 
-	job, err := d.Fetch("queue2", 1*time.Second)
+	job, err := d.Fetch("queue2", time.Second)
 	assert.Nil(s.T(), err)
 
-	err = d.Ack(job.MessageId)
+	err = d.Ack(job.JobId)
 	assert.Nil(s.T(), err)
 }
 
-func (s *DisqueSuite) TestAckWithMalformedMessageId() {
+func (s *DisqueSuite) TestAckWithMalformedJobId() {
 	hosts := []string{"127.0.0.1:7711"}
 	d := NewDisque(hosts, 1000)
 	d.Initialize()
@@ -353,7 +418,7 @@ func BenchmarkPush(b *testing.B) {
 	d.Initialize()
 
 	for i := 0; i < b.N; i++ {
-		d.Push("queueBenchPush", "asdf", 1*time.Second)
+		d.Push("queueBenchPush", "asdf", time.Second)
 	}
 }
 
@@ -365,7 +430,7 @@ func BenchmarkPushAsync(b *testing.B) {
 	options["ASYNC"] = "true"
 
 	for i := 0; i < b.N; i++ {
-		d.PushWithOptions("queueBenchPushAsync", "asdf", 1*time.Second, options)
+		d.PushWithOptions("queueBenchPushAsync", "asdf", time.Second, options)
 	}
 }
 
@@ -374,11 +439,11 @@ func BenchmarkFetch(b *testing.B) {
 	d := NewDisque(hosts, 1000)
 	d.Initialize()
 	for i := 0; i < b.N; i++ {
-		d.Push("queueBenchFetch", "asdf", 1*time.Second)
+		d.Push("queueBenchFetch", "asdf", time.Second)
 	}
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		d.Fetch("queueBenchFetch", 1*time.Second)
+		d.Fetch("queueBenchFetch", time.Second)
 	}
 }

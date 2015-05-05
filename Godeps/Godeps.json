@@ -61,7 +61,7 @@
 		},
 		{
 			"ImportPath": "github.com/zencoder/disque-go/disque",
-			"Rev": "da208555e48eec9eab5fab081bec8f3688a41766"
+			"Rev": "fed84d33b4a61c964d333355d1bf82ee2c47bafc"
 		},
 		{
 			"ImportPath": "golang.org/x/net/context",

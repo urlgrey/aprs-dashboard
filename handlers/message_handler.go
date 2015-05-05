@@ -67,7 +67,7 @@ func (m *MessageHandler) SubmitAPRSMessage(resp http.ResponseWriter, req *http.R
 		return
 	}
 
-	if err = conn.Push("aprs_messages", string(aprsMessageJson), 100); err != nil {
+	if _, err = conn.Push("aprs_messages", string(aprsMessageJson), 100); err != nil {
 		m.pool.Put(conn)
 		log.Printf("Error while enqueueing APRS message for asynchronous handling: %s", err)
 		http.Error(resp,
