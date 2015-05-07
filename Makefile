@@ -20,10 +20,12 @@ fmt:
 test:
 	if [ ! -d $(COVERAGEDIR) ]; then mkdir $(COVERAGEDIR); fi
 	$(GO) test -v ./handlers -race -cover -coverprofile=$(COVERAGEDIR)/handlers.coverprofile
+	$(GO) test -v ./ingest -cover -coverprofile=$(COVERAGEDIR)/ingest.coverprofile
 	$(GO) test -v ./parser -race -cover -coverprofile=$(COVERAGEDIR)/parser.coverprofile
 
 cover:
 	$(GO) tool cover -html=$(COVERAGEDIR)/handlers.coverprofile -o $(COVERAGEDIR)/handlers.html
+	$(GO) tool cover -html=$(COVERAGEDIR)/ingest.coverprofile -o $(COVERAGEDIR)/ingest.html
 	$(GO) tool cover -html=$(COVERAGEDIR)/parser.coverprofile -o $(COVERAGEDIR)/parser.html
 
 bench:
