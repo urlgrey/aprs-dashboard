@@ -21,6 +21,10 @@ type MessageHandler struct {
 	PoolTimeout time.Duration
 }
 
+const (
+	APRS_MESSAGES_QUEUE_NAME = "aprs_messages"
+)
+
 func NewMessageHandler(parser *parser.AprsParser, pool *disque.DisquePool) *MessageHandler {
 	return &MessageHandler{parser: parser, pool: pool, PoolTimeout: 5 * time.Second}
 }
@@ -67,7 +71,7 @@ func (m *MessageHandler) SubmitAPRSMessage(resp http.ResponseWriter, req *http.R
 		return
 	}
 
-	if _, err = conn.Push("aprs_messages", string(aprsMessageJson), 100); err != nil {
+	if _, err = conn.Push(APRS_MESSAGES_QUEUE_NAME, string(aprsMessageJson), 100); err != nil {
 		m.pool.Put(conn)
 		log.Printf("Error while enqueueing APRS message for asynchronous handling: %s", err)
 		http.Error(resp,

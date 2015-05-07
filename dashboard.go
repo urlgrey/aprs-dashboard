@@ -11,6 +11,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/urlgrey/aprs-dashboard/db"
 	"github.com/urlgrey/aprs-dashboard/handlers"
+	"github.com/urlgrey/aprs-dashboard/ingest"
 	"github.com/urlgrey/aprs-dashboard/parser"
 	"github.com/zencoder/disque-go/disque"
 )
@@ -36,6 +37,9 @@ func main() {
 	mainServer.UseHandler(router)
 
 	go mainServer.Run(":3000")
+
+	ingestProcessor := ingest.NewIngestProcessor(disquePool, "aprs_messages")
+	go ingestProcessor.Run()
 
 	healthCheckServer := negroni.New()
 	healthCheckRouter := mux.NewRouter()
