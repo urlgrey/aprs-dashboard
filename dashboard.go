@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/awslabs/aws-sdk-go/service/dynamodb"
 	"github.com/codegangsta/negroni"
 	"github.com/gorilla/mux"
 	"github.com/urlgrey/aprs-dashboard/db"
@@ -38,7 +39,7 @@ func main() {
 
 	go mainServer.Run(":3000")
 
-	ingestProcessor := ingest.NewIngestProcessor(disquePool, "aprs_messages")
+	ingestProcessor := ingest.NewIngestProcessor(disquePool, "aprs_messages", createDynamoDBConnection())
 	go ingestProcessor.Run()
 
 	healthCheckServer := negroni.New()
@@ -46,6 +47,10 @@ func main() {
 	handlers.InitializeRouterForHealthCheckHandler(healthCheckRouter, disquePool)
 	healthCheckServer.UseHandler(healthCheckRouter)
 	healthCheckServer.Run(":3100")
+}
+
+func createDynamoDBConnection() *dynamodb.DynamoDB {
+	return dynamodb.New(nil)
 }
 
 func createDisquePool() (pool *disque.DisquePool) {

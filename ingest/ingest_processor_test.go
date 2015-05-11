@@ -4,6 +4,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/awslabs/aws-sdk-go/service/dynamodb"
 	"github.com/stretchr/testify/assert"
 	"github.com/zencoder/disque-go/disque"
 	"golang.org/x/net/context"
@@ -12,7 +13,8 @@ import (
 func TestIngestProcessorStop(t *testing.T) {
 	pool := createDisquePool("127.0.0.1:7711")
 	defer pool.Close()
-	h := NewIngestProcessor(pool, "testqueue")
+	database := dynamodb.New(nil)
+	h := NewIngestProcessor(pool, "testqueue", database)
 	go h.Run()
 	h.Stop()
 }
@@ -20,7 +22,8 @@ func TestIngestProcessorStop(t *testing.T) {
 func TestIngestProcessorRun(t *testing.T) {
 	pool := createDisquePool("127.0.0.1:7711")
 	defer pool.Close()
-	h := NewIngestProcessor(pool, "testqueue")
+	database := dynamodb.New(nil)
+	h := NewIngestProcessor(pool, "testqueue", database)
 
 	ctx := context.Background()
 	context.WithTimeout(ctx, time.Second)
@@ -49,7 +52,8 @@ func TestIngestProcessorRun(t *testing.T) {
 
 func TestIngestProcessorRunWithBrokenDisqueConnection(t *testing.T) {
 	pool := createDisquePool("127.0.0.1:8811")
-	h := NewIngestProcessor(pool, "testqueue")
+	database := dynamodb.New(nil)
+	h := NewIngestProcessor(pool, "testqueue", database)
 
 	go h.Run()
 	time.Sleep(time.Second)

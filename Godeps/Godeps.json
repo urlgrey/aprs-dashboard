@@ -6,6 +6,30 @@
 	],
 	"Deps": [
 		{
+			"ImportPath": "github.com/awslabs/aws-sdk-go/aws",
+			"Rev": "bba8ba311b61785d4a866fe5c110737d9bf8b764"
+		},
+		{
+			"ImportPath": "github.com/awslabs/aws-sdk-go/internal/endpoints",
+			"Rev": "bba8ba311b61785d4a866fe5c110737d9bf8b764"
+		},
+		{
+			"ImportPath": "github.com/awslabs/aws-sdk-go/internal/protocol/json/jsonutil",
+			"Rev": "bba8ba311b61785d4a866fe5c110737d9bf8b764"
+		},
+		{
+			"ImportPath": "github.com/awslabs/aws-sdk-go/internal/protocol/jsonrpc",
+			"Rev": "bba8ba311b61785d4a866fe5c110737d9bf8b764"
+		},
+		{
+			"ImportPath": "github.com/awslabs/aws-sdk-go/internal/signer/v4",
+			"Rev": "bba8ba311b61785d4a866fe5c110737d9bf8b764"
+		},
+		{
+			"ImportPath": "github.com/awslabs/aws-sdk-go/service/dynamodb",
+			"Rev": "bba8ba311b61785d4a866fe5c110737d9bf8b764"
+		},
+		{
 			"ImportPath": "github.com/codegangsta/negroni",
 			"Comment": "v0.1-70-gc7477ad",
 			"Rev": "c7477ad8e330bef55bf1ebe300cf8aa67c492d1b"
@@ -42,6 +66,10 @@
 			"ImportPath": "github.com/urlgrey/golang-set",
 			"Comment": "v1-25-g154bd31",
 			"Rev": "154bd3129f0f6dae91c0ef77f381693d8db0fa6b"
+		},
+		{
+			"ImportPath": "github.com/vaughan0/go-ini",
+			"Rev": "a98ad7ee00ec53921f08832bc06ecf7fd600e6a1"
 		},
 		{
 			"ImportPath": "github.com/youtube/vitess/go/acl",

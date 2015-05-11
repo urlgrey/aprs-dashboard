@@ -5,6 +5,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/awslabs/aws-sdk-go/service/dynamodb"
 	"github.com/zencoder/disque-go/disque"
 	"golang.org/x/net/context"
 )
@@ -14,14 +15,16 @@ type IngestProcessor struct {
 	queueName   string
 	stopChannel chan bool
 	waitGroup   *sync.WaitGroup
+	database    *dynamodb.DynamoDB
 }
 
-func NewIngestProcessor(pool *disque.DisquePool, queueName string) *IngestProcessor {
+func NewIngestProcessor(pool *disque.DisquePool, queueName string, database *dynamodb.DynamoDB) *IngestProcessor {
 	return &IngestProcessor{
 		pool:        pool,
 		queueName:   queueName,
 		stopChannel: make(chan bool),
 		waitGroup:   &sync.WaitGroup{},
+		database:    database,
 	}
 }
 
