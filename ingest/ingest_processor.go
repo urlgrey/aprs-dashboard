@@ -1,11 +1,13 @@
 package ingest
 
 import (
+	"encoding/json"
 	"log"
 	"sync"
 	"time"
 
 	"github.com/awslabs/aws-sdk-go/service/dynamodb"
+	"github.com/urlgrey/aprs-dashboard/models"
 	"github.com/zencoder/disque-go/disque"
 	"golang.org/x/net/context"
 )
@@ -64,6 +66,12 @@ func (i *IngestProcessor) Run() {
 
 		if job != nil {
 			log.Printf("Job ID: %s", job.JobId)
+			message := &models.AprsMessage{}
+			if err = json.Unmarshal([]byte(job.Message), message); err != nil {
+				log.Printf("Error while binding message to model: %s", err)
+				continue
+			}
+			log.Printf("Message location: lat=%f, long=%f", message.Latitude, message.Longitude)
 		}
 	}
 }
